@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Raw Portal</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RAW">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a0a; --card:#151515; --card2:#1d1d1d; --line:#2c2c2c; --ink:#f4f4f4; --mut:#9b9b9b;
+  --red:#e10600; --redink:#ff3b30; --onred:#fff; --ok:#f4f4f4;
+  --head:'Anton',Impact,'Arial Narrow Bold','Haettenschweiler',sans-serif;
+  --body:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){ :root:not([data-theme=dark]){
+  --bg:#f2f2f0; --card:#fff; --card2:#f0f0ee; --line:#d6d6d3; --ink:#0a0a0a; --mut:#5c5c5c; --redink:#c40500; --ok:#0a0a0a; color-scheme:light; } }
+:root[data-theme=light]{
+  --bg:#f2f2f0; --card:#fff; --card2:#f0f0ee; --line:#d6d6d3; --ink:#0a0a0a; --mut:#5c5c5c; --redink:#c40500; --ok:#0a0a0a; color-scheme:light; }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+h1,h2,h3,.hd{font-family:var(--head);font-weight:400;text-transform:uppercase;letter-spacing:.04em;margin:0;line-height:1.05}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--redink)}
+
+/* header */
+header.top{position:sticky;top:0;z-index:20;background:#0a0a0a;color:#fff;border-bottom:3px solid var(--red);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;align-items:center;gap:10px}
+.logo{font-family:var(--head);font-size:30px;letter-spacing:.06em;line-height:1;display:flex;align-items:baseline;gap:6px;min-width:0}
+.logo b{font-weight:400}
+.logo i{font-style:normal;color:var(--red);transform:skewX(-14deg);display:inline-block}
+.logo span{text-transform:uppercase;font-size:13px;letter-spacing:.22em;color:#bdbdbd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sp{flex:1}
+.ghost{background:none;border:1px solid #444;color:#fff;padding:8px 12px;font-family:var(--head);letter-spacing:.1em;text-transform:uppercase;font-size:13px;min-height:40px}
+
+/* tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#0a0a0a;border-top:1px solid #2c2c2c;display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:0 0 auto;background:none;border:0;border-top:3px solid transparent;margin-top:-1px;color:#9b9b9b;font-family:var(--head);text-transform:uppercase;letter-spacing:.1em;font-size:14px;padding:14px 14px 13px;min-height:50px}
+nav.tabs button[aria-current=page]{color:#fff;border-top-color:var(--red)}
+
+main{max-width:760px;margin:0 auto;padding:16px 14px calc(env(safe-area-inset-bottom) + 90px)}
+.titlebar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:4px 0 14px}
+.titlebar h1{font-size:clamp(28px,9vw,40px);overflow-wrap:anywhere}
+.titlebar>div{min-width:0}
+.btn,.edit,.chip{white-space:nowrap;flex:0 0 auto}
+.titlebar h1::after{content:'';display:block;width:54px;height:5px;background:var(--red);margin-top:6px;transform:skewX(-20deg)}
+.sub{color:var(--mut);font-size:14px}
+section{margin:0 0 22px}
+.sechd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.sechd h2{font-size:20px;letter-spacing:.08em}
+.sechd h2::before{content:'/ ';color:var(--red)}
+
+.btn{background:var(--red);border:0;color:var(--onred);font-family:var(--head);text-transform:uppercase;letter-spacing:.1em;font-size:15px;padding:11px 16px;min-height:44px}
+.btn:disabled{opacity:.5}
+.btn.line{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{font-size:13px;padding:8px 11px;min-height:38px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.chip{background:none;border:1px solid var(--line);color:var(--mut);padding:7px 11px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;min-height:36px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);padding:12px 12px 12px 14px;margin:0 0 8px}
+.card.hot{border-left-color:var(--red)}
+.card h3{font-family:var(--body);font-weight:800;text-transform:none;letter-spacing:0;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.card p{margin:4px 0 0;overflow-wrap:anywhere}
+.pre{white-space:pre-wrap}
+.meta{color:var(--mut);font-size:13px;margin-top:4px}
+.row{display:flex;gap:10px;align-items:flex-start}
+.row .grow{flex:1;min-width:0}
+.tag{display:inline-block;border:1px solid var(--line);color:var(--mut);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;margin-right:4px;white-space:nowrap}
+.tag.red{background:var(--red);border-color:var(--red);color:#fff}
+.tag.inv{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.empty{color:var(--mut);border:1px dashed var(--line);padding:16px;text-align:center;font-size:15px}
+.tick{flex:0 0 auto;width:30px;height:30px;border:2px solid var(--mut);background:none;padding:0;display:grid;place-items:center;font-weight:900;font-size:18px;line-height:1;color:var(--bg)}
+.tick[aria-checked=true]{background:var(--red);border-color:var(--red);color:#fff}
+.done h3{text-decoration:line-through;color:var(--mut);font-weight:600}
+.edit{background:none;border:0;color:var(--mut);font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;padding:6px 4px;min-height:36px}
+.big{font-family:var(--head);font-size:46px;line-height:1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.stat{background:var(--card);border:1px solid var(--line);padding:12px}
+.stat .n{font-family:var(--head);font-size:26px;line-height:1.1;overflow-wrap:anywhere}
+.stat .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.bar{height:8px;background:var(--card2);border:1px solid var(--line);margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ink)}
+.bar.over i{background:var(--red)}
+.split{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.amt{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* calendar */
+.calhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.calhd h2{font-size:24px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.cal .dow{color:var(--mut);font-size:11px;text-align:center;text-transform:uppercase;letter-spacing:.08em;font-weight:800;padding:4px 0}
+.cal button{background:var(--card);border:1px solid var(--line);min-height:52px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink);font-weight:700}
+.cal button.out{opacity:.35}
+.cal button.today{border-color:var(--red);color:var(--redink)}
+.cal button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.dots i{width:7px;height:7px;display:block}
+.d-ev{background:var(--red)} .d-re{background:currentColor} .d-tr{background:var(--mut)} .d-cd{border:2px solid var(--red)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;display:block}
+
+/* photos */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+.ph{background:var(--card);border:1px solid var(--line);padding:0;text-align:left;color:var(--ink);display:block;width:100%}
+.ph img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:var(--card2)}
+.ph div{padding:8px 9px 9px;font-size:14px;overflow-wrap:anywhere}
+.ph small{display:block;color:var(--mut);font-size:12px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.strip img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--card2);border:1px solid var(--line)}
+.strip button{padding:0;border:0;background:none}
+
+.inline{display:flex;gap:6px;margin-bottom:12px}
+.inline input,.inline select{min-width:0}
+input[type=file]{width:100%;font-size:15px;padding:8px 0}
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=time],input[type=month],input[type=number],select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--ink);padding:11px 10px;font-size:16px;border-radius:0;min-height:46px;-webkit-appearance:none;appearance:none}
+textarea{min-height:120px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+label.f{display:block;margin:0 0 12px}
+label.f>span,fieldset.f>legend{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:var(--mut);margin-bottom:5px;padding:0}
+fieldset.f{border:0;padding:0;margin:0 0 12px}
+.cb{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:16px}
+.cb input{width:22px;height:22px;accent-color:var(--red);flex:0 0 auto}
+.hint{color:var(--mut);font-size:13px;margin:-6px 0 12px}
+
+dialog{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-top:4px solid var(--red);padding:0;width:min(560px,calc(100vw - 20px));max-height:calc(100dvh - 30px)}
+dialog::backdrop{background:rgba(0,0,0,.75)}
+.dl{padding:16px;overflow:auto;max-height:calc(100dvh - 34px)}
+.dl h2{font-size:26px;margin-bottom:14px}
+.dlbtns{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.dlbtns .sp{flex:1}
+.err{color:var(--redink);font-size:14px;min-height:1em;margin:6px 0}
+#viewer img{display:block;width:100%;max-height:62dvh;object-fit:contain;background:#000}
+
+/* gate */
+#gate{min-height:100dvh;display:grid;place-items:center;padding:24px;background:#0a0a0a;color:#fff}
+.gatebox{width:min(400px,100%);text-align:center}
+.gatebox .mark{font-family:var(--head);font-size:112px;line-height:.9;letter-spacing:.04em}
+.gatebox .slash{height:8px;background:var(--red);transform:skewX(-20deg);margin:12px auto 14px;width:70%}
+.gatebox .nm{font-family:var(--head);letter-spacing:.3em;font-size:16px;color:#bdbdbd;text-transform:uppercase}
+.gatebox p{color:#bdbdbd}
+.gatebox .btn{width:100%;margin-top:10px}
+.gatebox .btn.line{border-color:#444;color:#fff}
+.gatebox input{background:#1d1d1d;border-color:#444;color:#fff;margin-top:18px}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 70px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;font-weight:700;font-size:14px;z-index:99;max-width:90vw;text-align:center}
+.comment{border-top:1px solid var(--line);padding:8px 0 0;margin-top:8px;font-size:15px}
+.vote{flex:0 0 auto;background:none;border:2px solid var(--line);color:var(--ink);min-width:48px;padding:6px 4px;font-family:var(--head);font-size:20px;line-height:1.1;display:flex;flex-direction:column;align-items:center}
+.vote small{font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--mut)}
+.vote[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.vote[aria-pressed=true] small{color:#fff}
+.kv{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.copy{background:none;border:0;text-align:left;padding:0;font-weight:700;font-size:16px;overflow-wrap:anywhere;color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gatebox">
+    <div class="mark">RAW</div>
+    <div class="slash"></div>
+    <div class="nm" id="gateName">The Raw Portal</div>
+    <p id="gateText">Members only. Sign in to continue.</p>
+    <button class="btn" id="gGoogle">Sign in with Google</button>
+    <div id="gEmailBox">
+      <input type="email" id="gEmail" placeholder="or type your email address" autocomplete="email" aria-label="Email address">
+      <button class="btn line" id="gLink">Email me a sign-in link</button>
+    </div>
+    <button class="btn line" id="gOut" hidden>Sign out</button>
+    <div class="err" id="gateErr" role="alert"></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="logo"><b>RAW</b><i>/</i><span id="portalName">PORTAL</span></div>
+    <div class="sp"></div>
+    <button class="ghost" data-act="settings">Team</button>
+  </header>
+  <main id="view"></main>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+</div>
+
+<!-- These dialogs sit outside the part of the page that redraws, so typed text and chosen photos are never lost. -->
+<dialog id="dlg">
+  <form class="dl" id="dlgForm" method="dialog" novalidate>
+    <h2 id="fTitle"></h2>
+    <div id="fBody"></div>
+    <div class="err" id="fErr" role="alert"></div>
+    <div class="dlbtns">
+      <button type="submit" class="btn" id="fSave">Save</button>
+      <button type="button" class="btn line" id="fCancel">Cancel</button>
+      <span class="sp"></span>
+      <button type="button" class="edit" id="fDel" hidden>Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="viewer">
+  <div class="dl">
+    <img id="vImg" alt="">
+    <p id="vCap" class="pre"></p>
+    <div class="meta" id="vMeta"></div>
+    <div class="dlbtns">
+      <button type="button" class="btn line" id="vClose">Close</button>
+      <span class="sp"></span>
+      <button type="button" class="edit" id="vEdit">Edit</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="settings"><div class="dl" id="setBody"></div></dialog>
+
+<div id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+'use strict';
+const SUPABASE_URL = 'https://qbpqaaqjgwgsszclenvl.supabase.co';
+// Public key: it is meant to be visible in a web page. The database security rules are what protect the data.
+const SUPABASE_KEY = 'sb_publishable_m8tnkhKUkHTp3r0sahR4Pw_5P2Kjmne';
+
+const TABS = [['today','Today'],['calendar','Calendar'],['reminders','Reminders'],['collab','Collab'],['ideas','Ideas'],['money','Money'],['photos','Photos'],['docs','Docs'],['trips','Trips'],['details','Details'],['lists','Lists'],['countdowns','Countdowns']];
+const DEFAULTS = {
+  name: 'The Raw Portal',
+  notice: '',
+  categories: ['Stock','Packaging','Shipping and courier','Marketing','Equipment','Software and subscriptions','Travel','Professional fees','Rent and utilities','Other'],
+  lists: ['Stock and supplies','Packaging','Office','Events','Other'],
+  folders: ['Contracts','Invoices and quotes','Certificates and compliance','Marketing','Product','Other'],
+  budgets: {}
+};
+const IDEA_STATUS = ['New','Discussing','Doing','Done','Parked'];
+
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+const ym = d => d.getFullYear() + '-' + pad(d.getMonth()+1);
+const parse = s => { const [y,m,d] = String(s).split('-').map(Number); return new Date(y, (m||1)-1, d||1); };
+const TODAY = () => ymd(new Date());
+const fmt = s => s ? parse(s).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '';
+const fmtS = s => s ? parse(s).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : '';
+const ymLabel = s => parse(s + '-01').toLocaleDateString('en-ZA',{month:'long',year:'numeric'});
+const daysTo = s => Math.round((parse(s) - parse(TODAY())) / 864e5);
+const ZAR = new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'});
+const money = n => ZAR.format(Number(n)||0);
+const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+function parseAmount(v){
+  let s = String(v == null ? '' : v).replace(/[Rr\s ]/g,'');
+  if(!s) return NaN;
+  const c = s.lastIndexOf(','), d = s.lastIndexOf('.');
+  if(c > -1 && d > -1) s = c > d ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
+  else if(c > -1) s = s.replace(',','.');
+  return /^-?\d*\.?\d+$/.test(s) ? Math.round(parseFloat(s)*100)/100 : NaN;
+}
+function dueText(s){ const n = daysTo(s); return n < -1 ? (-n) + ' days late' : n === -1 ? '1 day late' : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : 'In ' + n + ' days'; }
+function dueTag(s){ const n = daysTo(s); return '<span class="tag ' + (n < 0 ? 'red' : n <= 1 ? 'inv' : '') + '">' + dueText(s) + '</span>'; }
+
+let sb = null, me = null, M = [], D = {}, chan = null, curUid = null, loaded = false;
+const ui = { tab:'today', calMonth: ym(new Date()), calDay: TODAY(), remFilter:'open', moneyMonth: ym(new Date()), listFilter:'all', ideaSort:'top', openIdea:null, photoLimit:30, docFilter:'all', showDone:false, focus:null };
+
+const list = col => Object.entries(D[col] || {}).map(([id,d]) => Object.assign({id}, d));
+const get = (col,id) => (D[col] || {})[id];
+const cfg = () => Object.assign({}, DEFAULTS, get('settings','main') || {});
+const nameOf = e => { if(!e || e === 'all') return 'Everyone'; if(e === 'company') return 'Company account'; const m = M.find(x => x.email === e); return m ? (m.name || m.email.split('@')[0]) : e.split('@')[0]; };
+const names = arr => (arr && arr.length ? arr.map(nameOf).join(', ') : 'Everyone');
+const by = (k, dir=1) => (a,b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * dir;
+
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600); }
+
+/* ---------- saving: the screen updates first, the save happens in the background ---------- */
+function put(col, id, data){
+  (D[col] = D[col] || {})[id] = data; render();
+  sb.from('docs').upsert({collection:col, id, data, updated_at:new Date().toISOString()}).then(({error}) => { if(error) toast('Could not save. ' + error.message); });
+}
+function patch(col, id, changes){ put(col, id, Object.assign({}, get(col,id) || {}, changes)); }
+function del(col, id){
+  if(D[col]) delete D[col][id]; render();
+  sb.from('docs').delete().eq('collection',col).eq('id',id).then(({error}) => { if(error) toast('Could not delete. ' + error.message); });
+}
+function saveCfg(changes){ put('settings','main', Object.assign({}, get('settings','main') || {}, changes)); }
+function stamp(){ return { by: me.email, at: new Date().toISOString() }; }
+
+async function loadAll(){
+  const out = {}; let from = 0;
+  for(;;){
+    const {data, error} = await sb.from('docs').select('collection,id,data').range(from, from + 999);
+    if(error) throw error;
+    data.forEach(r => { (out[r.collection] = out[r.collection] || {})[r.id] = r.data; });
+    if(data.length < 1000) break; from += 1000;
+  }
+  D = out; loaded = true;
+}
+async function loadMembers(){
+  const {data, error} = await sb.from('allowed_emails').select('email,name,is_admin').order('name');
+  if(error) throw error;
+  M = data || []; return M;
+}
+function subscribe(){
+  if(chan) sb.removeChannel(chan);
+  chan = sb.channel('raw-portal')
+    .on('postgres_changes',{event:'*',schema:'public',table:'docs'}, p => {
+      if(p.eventType === 'DELETE'){ const o = p.old || {}; if(D[o.collection]) delete D[o.collection][o.id]; }
+      else { const n = p.new; (D[n.collection] = D[n.collection] || {})[n.id] = n.data; }
+      schedule();
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'allowed_emails'}, () => { loadMembers().then(() => { me = M.find(x => x.email === me.email) || me; schedule(); if($('#settings').open) renderSettings(); }).catch(() => {}); })
+    .subscribe();
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && me && loaded) loadAll().then(schedule).catch(() => {}); });
+
+/* ---------- drawing ---------- */
+let pending = false;
+function schedule(){
+  const a = document.activeElement;
+  if(a && $('#view').contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){ pending = true; return; }   // never redraw under someone typing
+  render();
+}
+$('#view').addEventListener('focusout', () => { if(pending){ pending = false; setTimeout(schedule, 80); } });
+
+function render(){
+  if(!me) return;
+  const a = document.activeElement, keep = a && a.id && $('#view').contains(a) ? {id:a.id, v:a.value} : null;
+  const c = cfg();
+  document.title = c.name; $('#portalName').textContent = c.name.replace(/^the\s+/i,'').replace(/^raw\s*/i,'') || 'Portal';
+  if(!$('#tabs').children.length) $('#tabs').innerHTML = TABS.map(([k,l]) => '<button data-act="tab" data-id="' + k + '">' + l + '</button>').join('');
+  $$('#tabs button').forEach(b => { if(b.dataset.id === ui.tab) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  $('#view').innerHTML = R[ui.tab]();
+  if(keep){ const el = document.getElementById(keep.id); if(el){ el.value = keep.v; el.focus(); } }
+  if(ui.focus){ const el = document.getElementById(ui.focus); if(el) el.focus(); ui.focus = null; }
+  hydrate();
+}
+function showTab(t){ ui.tab = TABS.some(x => x[0] === t) ? t : 'today'; try{ history.replaceState(null,'','#' + ui.tab); }catch(e){} render(); window.scrollTo(0,0); const b = $('#tabs [aria-current]'); if(b && b.scrollIntoView) b.scrollIntoView({inline:'center',block:'nearest'}); }
+const title = (t, sub, btn) => '<div class="titlebar"><div><h1>' + t + '</h1>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>' + (btn || '') + '</div>';
+const addBtn = (act, label) => '<button class="btn" data-act="' + act + '">' + (label || '+ Add') + '</button>';
+const sec = (t, inner, btn) => '<section><div class="sechd"><h2>' + t + '</h2>' + (btn || '') + '</div>' + inner + '</section>';
+const empty = t => '<div class="empty">' + t + '</div>';
+const chips = (act, cur, opts) => '<div class="chips">' + opts.map(([v,l]) => '<button class="chip" data-act="' + act + '" data-id="' + esc(v) + '" aria-pressed="' + (cur === v) + '">' + esc(l) + '</button>').join('') + '</div>';
+
+/* photos live in private storage; the page asks for short-lived links to show them */
+const urlCache = new Map();
+async function hydrate(){
+  const imgs = $$('img[data-p]'), need = [...new Set(imgs.map(i => i.dataset.p).filter(p => p && !urlCache.has(p)))];
+  if(need.length){
+    const {data} = await sb.storage.from('photos').createSignedUrls(need, 3600);
+    (data || []).forEach(r => { if(r.signedUrl) urlCache.set(r.path, r.signedUrl); });
+    setTimeout(() => need.forEach(p => urlCache.delete(p)), 55*60*1000);
+  }
+  $$('img[data-p]').forEach(i => { const u = urlCache.get(i.dataset.p); if(u && i.src !== u) i.src = u; });
+  const links = $$('a[data-f]'), needF = [...new Set(links.map(a => a.dataset.f).filter(p => p && !fileUrls.has(p)))];
+  if(needF.length){
+    const {data} = await sb.storage.from('files').createSignedUrls(needF, 3600);
+    (data || []).forEach(r => { if(r.signedUrl) fileUrls.set(r.path, r.signedUrl); });
+    setTimeout(() => needF.forEach(p => fileUrls.delete(p)), 55*60*1000);
+  }
+  $$('a[data-f]').forEach(a => { const u = fileUrls.get(a.dataset.f); if(u) a.href = u; });
+}
+const fileUrls = new Map();
+const MAX_FILE = 25 * 1024 * 1024;
+const sizeText = n => !n ? '' : n < 1024*1024 ? Math.max(1, Math.round(n/1024)) + ' KB' : (n/1024/1024).toFixed(1).replace('.',',') + ' MB';
+async function uploadFile(file){
+  if(file.size > MAX_FILE) throw new Error('That file is ' + sizeText(file.size) + '. The limit is 25 MB per file.');
+  const safe = (file.name || 'file').normalize('NFKD').replace(/[^\w.\- ]+/g,'').trim().replace(/\s+/g,'-').slice(-80) || 'file';
+  const path = newId() + '/' + safe;
+  const r = await sb.storage.from('files').upload(path, file, {contentType: file.type || 'application/octet-stream'}); if(r.error) throw r.error;
+  return {path, name: file.name || safe, size: file.size, type: file.type || ''};
+}
+async function loadImg(file){
+  const url = URL.createObjectURL(file);
+  try { return await new Promise((res,rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('That file could not be read as a photo.')); i.src = url; }); }
+  finally { setTimeout(() => URL.revokeObjectURL(url), 1500); }
+}
+function toBlob(img, max, q){
+  let w = img.naturalWidth, h = img.naturalHeight; const s = Math.min(1, max/Math.max(w,h)); w = Math.round(w*s); h = Math.round(h*s);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img,0,0,w,h);
+  return new Promise(r => c.toBlob(r,'image/jpeg',q));
+}
+async function uploadPhoto(file){
+  const img = await loadImg(file), key = newId();
+  const full = await toBlob(img,1600,.82), th = await toBlob(img,480,.72);
+  const path = 'full/' + key + '.jpg', thumb = 'thumb/' + key + '.jpg';
+  let r = await sb.storage.from('photos').upload(path, full, {contentType:'image/jpeg'}); if(r.error) throw r.error;
+  r = await sb.storage.from('photos').upload(thumb, th, {contentType:'image/jpeg'}); if(r.error) throw r.error;
+  return {path, thumb};
+}
+function removePhoto(p){ if(p && p.path) sb.storage.from('photos').remove([p.path, p.thumb]).then(() => {}); }
+
+/* ---------- one form for everything ---------- */
+let F = null;
+function fieldHtml(f, v){
+  const n = 'name="' + f.k + '"', req = f.required ? ' required' : '', ph = f.ph ? ' placeholder="' + esc(f.ph) + '"' : '';
+  const val = v == null ? '' : v;
+  if(f.type === 'note') return '<p class="hint" style="margin-top:0">' + f.label + '</p>';
+  if(f.type === 'check') return '<label class="cb"><input type="checkbox" ' + n + (val ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
+  if(f.type === 'checks') return '<fieldset class="f"><legend>' + esc(f.label) + '</legend>' + f.options.map(([ov,ol]) => '<label class="cb"><input type="checkbox" ' + n + ' value="' + esc(ov) + '"' + ((val || []).includes(ov) ? ' checked' : '') + '> ' + esc(ol) + '</label>').join('') + '</fieldset>';
+  let inp;
+  if(f.type === 'textarea') inp = '<textarea ' + n + req + ph + (f.rows ? ' rows="' + f.rows + '"' : '') + '>' + esc(val) + '</textarea>';
+  else if(f.type === 'select') inp = '<select ' + n + req + '>' + f.options.map(o => { const [ov,ol] = Array.isArray(o) ? o : [o,o]; return '<option value="' + esc(ov) + '"' + (String(ov) === String(val) ? ' selected' : '') + '>' + esc(ol) + '</option>'; }).join('') + '</select>';
+  else if(f.type === 'photo') inp = '<input type="file" accept="image/*" ' + n + '>' ;
+  else if(f.type === 'file') inp = '<input type="file" ' + n + '>' ;
+  else if(f.type === 'amount') inp = '<input type="text" inputmode="decimal" ' + n + req + ' placeholder="' + esc(f.ph || '162,36') + '" value="' + esc(val === '' ? '' : String(val).replace('.',',')) + '">';
+  else inp = '<input type="' + (f.type || 'text') + '" ' + n + req + ph + (f.list ? ' list="dl-' + f.k + '"' : '') + ' value="' + esc(val) + '">' + (f.list ? '<datalist id="dl-' + f.k + '">' + f.list.map(o => '<option value="' + esc(o) + '">').join('') + '</datalist>' : '');
+  return '<label class="f"><span>' + esc(f.label) + (f.required ? '' : ' <small style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</small>') + '</span>' + inp + '</label>' + (f.hint ? '<p class="hint">' + esc(f.hint) + '</p>' : '');
+}
+function openForm(o){
+  F = o; const v = o.values || {};
+  $('#fTitle').textContent = o.title;
+  $('#fBody').innerHTML = o.fields.map(f => fieldHtml(f, v[f.k])).join('');
+  $('#fErr').textContent = ''; $('#fSave').textContent = o.saveLabel || 'Save'; $('#fSave').disabled = false;
+  const d = $('#fDel'); d.hidden = !o.onDelete; d.textContent = o.deleteLabel || 'Delete'; d.dataset.armed = '';
+  $('#dlg').showModal();
+}
+$('#fCancel').onclick = () => $('#dlg').close();
+$('#fDel').onclick = () => {
+  const d = $('#fDel');
+  if(!d.dataset.armed){ d.dataset.armed = '1'; d.textContent = 'Tap again to confirm'; return; }
+  const fn = F.onDelete; $('#dlg').close(); fn();
+};
+$('#dlgForm').addEventListener('submit', async e => {
+  e.preventDefault(); if(!F) return;
+  const form = e.target, out = {};
+  for(const f of F.fields){
+    if(f.type === 'note') continue;
+    if(f.type === 'check'){ out[f.k] = form.elements[f.k].checked; continue; }
+    if(f.type === 'checks'){ out[f.k] = [...form.querySelectorAll('input[name="' + f.k + '"]:checked')].map(x => x.value); continue; }
+    const el = form.elements[f.k];
+    if(f.type === 'photo' || f.type === 'file'){ out[f.k] = el.files[0] || null; if(f.required && !out[f.k]){ $('#fErr').textContent = f.type === 'photo' ? 'Please choose a photo.' : 'Please choose a file.'; return; } continue; }
+    let v = el.value.trim();
+    if(f.required && !v){ $('#fErr').textContent = 'Please fill in: ' + f.label + '.'; el.focus(); return; }
+    if(f.type === 'amount' && v){ v = parseAmount(v); if(isNaN(v) || v < 0){ $('#fErr').textContent = f.label + ' must be an amount, for example 162,36.'; el.focus(); return; } }
+    out[f.k] = v;
+  }
+  $('#fSave').disabled = true; $('#fSave').textContent = 'Saving';
+  try { await F.onSave(out); $('#dlg').close(); }
+  catch(err){ $('#fErr').textContent = (err && err.message) || 'Something went wrong.'; $('#fSave').disabled = false; $('#fSave').textContent = F.saveLabel || 'Save'; }
+});
+const whoOpts = () => M.map(m => [m.email, nameOf(m.email)]);
+
+/* ---------- calendar helpers ---------- */
+function dayItems(d){
+  const out = [];
+  list('events').forEach(e => { if(e.date <= d && d <= (e.end || e.date)) out.push({t:'ev', sort:e.time || '', html:itemCard('editEvent', e.id, e.title, [e.time, e.place, names(e.who)].filter(Boolean).join(' · '), '<span class="tag red">Event</span>', e.notes)}); });
+  list('reminders').forEach(r => { if(!r.done && r.due === d) out.push({t:'re', sort:r.time || '', html:itemCard('editReminder', r.id, r.title, [r.time, 'For ' + nameOf(r.who)].filter(Boolean).join(' · '), '<span class="tag inv">Reminder</span>')}); });
+  list('trips').forEach(t => { if(t.start <= d && d <= (t.end || t.start)) out.push({t:'tr', sort:'', html:itemCard('editTrip', t.id, t.title, [t.place, names(t.who)].filter(Boolean).join(' · '), '<span class="tag">Trip</span>')}); });
+  list('countdowns').forEach(c => { if(c.date === d) out.push({t:'cd', sort:'', html:itemCard('editCountdown', c.id, c.title, '', '<span class="tag">Countdown</span>')}); });
+  return out.sort(by('sort'));
+}
+function itemCard(act, id, t, meta, tags, body){
+  return '<div class="card hot"><div class="row"><div class="grow">' + (tags || '') + '<h3>' + esc(t) + '</h3>' + (meta ? '<div class="meta">' + esc(meta) + '</div>' : '') + (body ? '<p class="pre">' + esc(body) + '</p>' : '') + '</div><button class="edit" data-act="' + act + '" data-id="' + id + '">Edit</button></div></div>';
+}
+function reminderCard(r){
+  return '<div class="card ' + (r.done ? 'done' : daysTo(r.due || TODAY()) <= 0 ? 'hot' : '') + '"><div class="row"><button class="tick" role="checkbox" aria-checked="' + !!r.done + '" aria-label="Done" data-act="tickReminder" data-id="' + r.id + '">' + (r.done ? '✓' : '') + '</button><div class="grow"><h3>' + esc(r.title) + '</h3><div class="meta">' + (r.due && !r.done ? dueTag(r.due) : '') + esc([r.due ? fmt(r.due) : 'No date', r.time, 'For ' + nameOf(r.who), r.repeat && r.repeat !== 'none' ? 'Repeats ' + r.repeat : ''].filter(Boolean).join(' · ')) + '</div>' + (r.notes ? '<p class="pre">' + esc(r.notes) + '</p>' : '') + '</div><button class="edit" data-act="editReminder" data-id="' + r.id + '">Edit</button></div></div>';
+}
+function owedMap(){ const o = {}; list('expenses').forEach(e => { if(e.from && e.from !== 'company' && !e.repaid) o[e.from] = (o[e.from] || 0) + (Number(e.amount) || 0); }); return o; }
+function cdCard(c){
+  const n = daysTo(c.date);
+  return '<div class="card ' + (n >= 0 ? 'hot' : '') + '"><div class="row"><div style="min-width:86px;text-align:center"><div class="big">' + Math.abs(n) + '</div><div class="meta" style="margin:0">' + (n === 0 ? 'today' : (Math.abs(n) === 1 ? 'day ' : 'days ') + (n < 0 ? 'ago' : 'to go')) + '</div></div><div class="grow"><h3>' + esc(c.title) + '</h3><div class="meta">' + fmt(c.date) + '</div>' + (c.notes ? '<p class="pre">' + esc(c.notes) + '</p>' : '') + '</div><button class="edit" data-act="editCountdown" data-id="' + c.id + '">Edit</button></div></div>';
+}
+
+/* ---------- the tabs ---------- */
+const R = {
+  today(){
+    const c = cfg(), t = TODAY(), first = (nameOf(me.email) || '').split(' ')[0];
+    const rem = list('reminders').filter(r => !r.done && r.due && daysTo(r.due) <= 7 && (r.who === 'all' || !r.who || r.who === me.email)).sort(by('due'));
+    const soon = [];
+    list('events').forEach(e => { const n = daysTo(e.end || e.date); if(n >= 0 && daysTo(e.date) <= 14) soon.push({d:e.date, html:itemCard('editEvent', e.id, e.title, [fmt(e.date), e.time, e.place, names(e.who)].filter(Boolean).join(' · '), dueTag(e.date < t ? t : e.date))}); });
+    list('trips').forEach(x => { const n = daysTo(x.end || x.start); if(n >= 0 && daysTo(x.start) <= 30) soon.push({d:x.start, html:itemCard('editTrip', x.id, x.title, [fmtS(x.start) + (x.end && x.end !== x.start ? ' to ' + fmtS(x.end) : ''), x.place, names(x.who)].filter(Boolean).join(' · '), '<span class="tag">Trip</span>' + dueTag(x.start < t ? t : x.start))}); });
+    soon.sort(by('d'));
+    const cds = list('countdowns').filter(x => daysTo(x.date) >= 0).sort(by('date')).slice(0,3);
+    const mon = ym(new Date()), spent = list('expenses').filter(e => e.month === mon).reduce((a,e) => a + (Number(e.amount) || 0), 0);
+    const owed = owedMap(), owedTotal = Object.values(owed).reduce((a,b) => a + b, 0);
+    const ph = list('photos').sort(by('at',-1)).slice(0,4);
+    const ideas = list('ideas').filter(i => i.status !== 'Done' && i.status !== 'Parked').sort((a,b) => (b.votes || []).length - (a.votes || []).length || (a.at < b.at ? 1 : -1)).slice(0,3);
+    const NEWS = {events:['calendar','an event'],reminders:['reminders','a reminder'],notes:['collab','a note'],ideas:['ideas','an idea'],expenses:['money','an expense'],photos:['photos','a photo'],files:['docs','a document'],trips:['trips','a trip'],shopping:['lists','a list item'],countdowns:['countdowns','a countdown'],company:['details','a company detail'],people:['details','a profile'],contacts:['details','a contact']};
+    const since = new Date(Date.now() - 7*864e5).toISOString(), news = [];
+    Object.keys(NEWS).forEach(col => list(col).forEach(x => { if(x.by && x.by !== me.email && x.at && x.at > since) news.push({at:x.at, html:'<div class="card"><div class="row"><div class="grow"><p style="margin:0"><b>' + esc(nameOf(x.by)) + '</b> added or updated ' + NEWS[col][1] + ': ' + esc(x.title || x.caption || x.label || x.name || '') + '</p><div class="meta">' + fmtS(x.at.slice(0,10)) + '</div></div><button class="edit" data-act="tab" data-id="' + NEWS[col][0] + '">Open</button></div></div>'}); }));
+    news.sort(by('at',-1));
+    return title('Hey ' + esc(first), fmt(t)) +
+      sec('Notice board', c.notice ? '<div class="card hot"><p class="pre" style="margin:0">' + esc(c.notice) + '</p></div>' : empty('Nothing pinned. Use this for the one thing everyone must see.'), '<button class="edit" data-act="editNotice">Edit</button>') +
+      (news.length ? sec('New from the team', news.slice(0,6).map(x => x.html).join('')) : '') +
+      sec('Your reminders', rem.length ? rem.map(reminderCard).join('') : empty('Nothing due in the next 7 days.'), '<button class="btn sm" data-act="addReminder">+ Add</button>') +
+      sec('Coming up', soon.length ? soon.map(x => x.html).join('') : empty('No events in the next two weeks.'), '<button class="btn sm" data-act="addEvent">+ Add</button>') +
+      (cds.length ? sec('Countdowns', cds.map(cdCard).join('')) : '') +
+      sec('Money', '<div class="stats"><div class="stat"><div class="l">Spent in ' + parse(mon + '-01').toLocaleDateString('en-ZA',{month:'long'}) + '</div><div class="n">' + money(spent) + '</div></div><div class="stat"><div class="l">Owed to partners</div><div class="n">' + money(owedTotal) + '</div></div></div>', '<button class="btn sm" data-act="addExpense">+ Expense</button>') +
+      (ideas.length ? sec('Ideas on the table', ideas.map(i => '<div class="card"><div class="row"><div class="grow"><h3>' + esc(i.title) + '</h3><div class="meta">' + (i.votes || []).length + ((i.votes || []).length === 1 ? ' vote · ' : ' votes · ') + esc(nameOf(i.by)) + '</div></div><button class="edit" data-act="tab" data-id="ideas">Open</button></div></div>').join('')) : '') +
+      (ph.length ? sec('Latest photos', '<div class="strip">' + ph.map(p => '<button data-act="viewPhoto" data-id="' + p.id + '" aria-label="' + esc(p.caption || 'Photo') + '"><img data-p="' + esc(p.thumb) + '" alt=""></button>').join('') + '</div>') : '');
+  },
+
+  calendar(){
+    const m = parse(ui.calMonth + '-01'), start = new Date(m); start.setDate(1 - ((m.getDay() + 6) % 7));
+    const marks = {}; const mark = (d,k) => { (marks[d] = marks[d] || new Set()).add(k); };
+    const span = (a,b,k) => { let d = parse(a), e = parse(b || a), i = 0; while(d <= e && i++ < 120){ mark(ymd(d),k); d.setDate(d.getDate()+1); } };
+    list('events').forEach(e => span(e.date, e.end, 'ev'));
+    list('reminders').forEach(r => { if(!r.done && r.due) mark(r.due,'re'); });
+    list('trips').forEach(t => span(t.start, t.end, 'tr'));
+    list('countdowns').forEach(c => mark(c.date,'cd'));
+    let cells = '';
+    for(let i = 0; i < 42; i++){
+      const d = new Date(start); d.setDate(start.getDate() + i); const k = ymd(d);
+      if(i >= 35 && d.getMonth() !== m.getMonth() && i % 7 === 0) break;
+      cells += '<button data-act="calDay" data-id="' + k + '" class="' + (d.getMonth() !== m.getMonth() ? 'out ' : '') + (k === TODAY() ? 'today' : '') + '" aria-pressed="' + (k === ui.calDay) + '" aria-label="' + fmt(k) + '">' + d.getDate() + '<span class="dots">' + [...(marks[k] || [])].map(x => '<i class="d-' + x + '"></i>').join('') + '</span></button>';
+    }
+    const items = dayItems(ui.calDay);
+    return title('Calendar', '', addBtn('addEvent','+ Event')) +
+      '<div class="calhd"><button class="btn line sm" data-act="calPrev" aria-label="Previous month">‹ Prev</button><h2>' + ymLabel(ui.calMonth) + '</h2><button class="btn line sm" data-act="calNext" aria-label="Next month">Next ›</button></div>' +
+      '<div class="cal">' + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => '<div class="dow">' + d + '</div>').join('') + cells + '</div>' +
+      '<div class="legend"><span><i class="d-ev"></i>Event</span><span><i style="background:var(--ink)"></i>Reminder</span><span><i class="d-tr"></i>Trip</span><span><i class="d-cd"></i>Countdown</span></div>' +
+      sec(fmt(ui.calDay), items.length ? items.map(x => x.html).join('') : empty('Nothing on this day.'));
+  },
+
+  reminders(){
+    let rs = list('reminders');
+    if(ui.remFilter === 'mine') rs = rs.filter(r => r.who === me.email || r.who === 'all' || !r.who);
+    const open = rs.filter(r => !r.done).sort((a,b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1), done = rs.filter(r => r.done).sort(by('doneAt',-1)).slice(0,30);
+    return title('Reminders', open.length + ' open', addBtn('addReminder')) +
+      chips('remFilter', ui.remFilter, [['open','Everyone'],['mine','Mine']]) +
+      (open.length ? open.map(reminderCard).join('') : empty('All clear.')) +
+      (done.length ? '<p><button class="btn line sm" data-act="toggleDone">' + (ui.showDone ? 'Hide' : 'Show') + ' done (' + done.length + ')</button></p>' + (ui.showDone ? done.map(reminderCard).join('') : '') : '');
+  },
+
+  collab(){
+    const ns = list('notes').sort((a,b) => (!!b.pin - !!a.pin) || (a.at < b.at ? 1 : -1));
+    return title('Collab', 'Shared working notes', addBtn('addNote','+ Note')) +
+      (ns.length ? ns.map(n => '<div class="card ' + (n.pin ? 'hot' : '') + '"><div class="row"><div class="grow">' + (n.pin ? '<span class="tag red">Pinned</span>' : '') + '<h3>' + esc(n.title) + '</h3><p class="pre">' + esc(n.body) + '</p><div class="meta">Last edited by ' + esc(nameOf(n.by)) + ', ' + fmt((n.at || '').slice(0,10)) + '</div></div><button class="edit" data-act="editNote" data-id="' + n.id + '">Edit</button></div></div>').join('') : empty('No notes yet. Use these for plans, meeting notes, launch checklists and anything you are working on together.'));
+  },
+
+  ideas(){
+    let is = list('ideas');
+    is.sort(ui.ideaSort === 'top' ? ((a,b) => (b.votes || []).length - (a.votes || []).length || (a.at < b.at ? 1 : -1)) : by('at',-1));
+    return title('Ideas', 'Drop it, vote on it, talk it through', addBtn('addIdea','+ Idea')) +
+      chips('ideaSort', ui.ideaSort, [['top','Most votes'],['new','Newest']]) +
+      (is.length ? is.map(i => {
+        const v = i.votes || [], cs = i.comments || [], open = ui.openIdea === i.id;
+        return '<div class="card ' + (i.status === 'Doing' ? 'hot' : '') + '"><div class="row"><button class="vote" data-act="vote" data-id="' + i.id + '" aria-pressed="' + v.includes(me.email) + '" aria-label="Vote for this idea">' + v.length + '<small>VOTE</small></button><div class="grow"><span class="tag ' + (i.status === 'Doing' ? 'red' : i.status === 'Done' ? 'inv' : '') + '">' + esc(i.status || 'New') + '</span><h3>' + esc(i.title) + '</h3>' + (i.body ? '<p class="pre">' + esc(i.body) + '</p>' : '') + '<div class="meta">' + esc(nameOf(i.by)) + ' · ' + fmtS((i.at || '').slice(0,10)) + '</div></div><button class="edit" data-act="editIdea" data-id="' + i.id + '">Edit</button></div>' +
+          '<p style="margin-top:8px"><button class="btn line sm" data-act="openIdea" data-id="' + i.id + '">' + (open ? 'Hide comments' : 'Comments (' + cs.length + ')') + '</button></p>' +
+          (open ? cs.map(c => '<div class="comment"><b>' + esc(nameOf(c.by)) + '</b> <span class="meta">' + fmtS((c.at || '').slice(0,10)) + '</span><div class="pre">' + esc(c.text) + '</div></div>').join('') + '<form class="inline" data-form="comment" data-id="' + i.id + '" style="margin:10px 0 0"><input type="text" id="c-' + i.id + '" placeholder="Add a comment" aria-label="Add a comment"><button class="btn sm">Post</button></form>' : '') + '</div>';
+      }).join('') : empty('No ideas yet. First one in sets the tone.'));
+  },
+
+  money(){
+    const c = cfg(), mon = ui.moneyMonth, es = list('expenses').filter(e => e.month === mon).sort(by('at',-1));
+    const total = es.reduce((a,e) => a + (Number(e.amount) || 0), 0), budgetTotal = c.categories.reduce((a,k) => a + (Number(c.budgets[k]) || 0), 0);
+    const byCat = {}, byFrom = {}; es.forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; byFrom[e.from] = (byFrom[e.from] || 0) + e.amount; });
+    const cats = [...new Set([...c.categories, ...Object.keys(byCat)])].filter(k => byCat[k] || c.budgets[k]);
+    const owed = owedMap(), owedKeys = Object.keys(owed).filter(k => owed[k] > 0.004);
+    return title('Money', '', addBtn('addExpense','+ Expense')) +
+      '<div class="calhd"><button class="btn line sm" data-act="monPrev" aria-label="Previous month">‹ Prev</button><h2>' + ymLabel(mon) + '</h2><button class="btn line sm" data-act="monNext" aria-label="Next month">Next ›</button></div>' +
+      '<div class="stats"><div class="stat"><div class="l">Spent</div><div class="n">' + money(total) + '</div></div><div class="stat"><div class="l">' + (budgetTotal ? 'Left of ' + money(budgetTotal) : 'Budget') + '</div><div class="n" style="' + (budgetTotal && total > budgetTotal ? 'color:var(--redink)' : '') + '">' + (budgetTotal ? money(budgetTotal - total) : 'Not set') + '</div></div></div>' +
+      (Object.keys(byFrom).length ? '<div class="card">' + Object.keys(byFrom).sort().map(k => '<div class="split"><span>' + esc(nameOf(k)) + ' paid</span><span class="amt">' + money(byFrom[k]) + '</span></div>').join('') + '</div>' : '') +
+      sec('Owed to partners', owedKeys.length ? owedKeys.map(k => '<div class="card hot"><div class="kv"><div><h3>' + esc(nameOf(k)) + '</h3><div class="meta">Paid from own pocket, not yet paid back (all months)</div></div><div style="text-align:right"><div class="amt" style="font-size:18px">' + money(owed[k]) + '</div><button class="btn line sm" data-act="repay" data-id="' + esc(k) + '" style="margin-top:6px">Mark paid back</button></div></div></div>').join('') : empty('The company owes nobody anything.')) +
+      sec('Budgets', cats.length ? '<div class="card">' + cats.map(k => { const s = byCat[k] || 0, b = Number(c.budgets[k]) || 0; return '<div style="margin-bottom:10px"><div class="split"><span>' + esc(k) + '</span><span class="amt">' + money(s) + (b ? ' <span class="meta">of ' + money(b) + '</span>' : '') + '</span></div>' + (b ? '<div class="bar ' + (s > b ? 'over' : '') + '"><i style="width:' + Math.min(100, s / b * 100) + '%"></i></div>' : '') + '</div>'; }).join('') + '</div>' : empty('No spending or budgets for this month yet.'), '<button class="btn line sm" data-act="budgets">Budgets</button>') +
+      sec('Entries', es.length ? es.map(e => '<div class="card"><div class="row"><div class="grow"><div class="split"><h3>' + esc(e.title) + '</h3><span class="amt">' + money(e.amount) + '</span></div><div class="meta"><span class="tag">' + esc(e.cat) + '</span>' + esc(nameOf(e.from)) + (e.from !== 'company' ? (e.repaid ? ' · paid back' : ' · <b style="color:var(--redink)">owed</b>') : '') + '</div>' + (e.notes ? '<p class="pre">' + esc(e.notes) + '</p>' : '') + (e.photo ? '<p><button class="btn line sm" data-act="viewReceipt" data-id="' + e.id + '">View slip</button></p>' : '') + '</div><button class="edit" data-act="editExpense" data-id="' + e.id + '">Edit</button></div></div>').join('') : empty('Nothing logged for this month.'), '<button class="btn line sm" data-act="exportXlsx">Excel</button>');
+  },
+
+  photos(){
+    const all = list('photos').sort((a,b) => (b.date || '') < (a.date || '') ? -1 : (b.date || '') > (a.date || '') ? 1 : (a.at < b.at ? 1 : -1)), ps = all.slice(0, ui.photoLimit);
+    let html = '', cur = '';
+    ps.forEach(p => { const k = (p.date || '').slice(0,7); if(k !== cur){ if(cur) html += '</div>'; cur = k; html += '<div class="sechd" style="margin-top:14px"><h2>' + (k ? ymLabel(k) : 'No date') + '</h2></div><div class="grid">'; }
+      html += '<button class="ph" data-act="viewPhoto" data-id="' + p.id + '"><img data-p="' + esc(p.thumb) + '" alt="' + esc(p.caption || 'Photo') + '" loading="lazy"><div>' + esc(p.caption || '') + '<small>' + esc(nameOf(p.by)) + ' · ' + fmtS(p.date) + '</small></div></button>'; });
+    if(cur) html += '</div>';
+    return title('Photos', all.length + ' shared', addBtn('addPhoto','+ Photo')) + (ps.length ? html : empty('No photos yet. Add product shots, event photos, progress pics, anything worth sharing, with a description.')) +
+      (all.length > ps.length ? '<p style="text-align:center"><button class="btn line" data-act="morePhotos">Show more</button></p>' : '');
+  },
+
+  docs(){
+    const c = cfg(), all = list('files').sort(by('at',-1)), used = [...new Set([...all.map(f => f.folder)])].filter(Boolean).sort();
+    if(ui.docFilter !== 'all' && !used.includes(ui.docFilter)) ui.docFilter = 'all';
+    const fs = all.filter(f => ui.docFilter === 'all' || f.folder === ui.docFilter);
+    return title('Docs', 'Send and receive files', addBtn('addFile','+ Upload')) +
+      (used.length > 1 ? chips('docFilter', ui.docFilter, [['all','All'], ...used.map(l => [l,l])]) : '') +
+      (fs.length ? fs.map(f => '<div class="card"><div class="row"><div class="grow"><span class="tag">' + esc(f.folder || 'Other') + '</span><h3>' + esc(f.title) + '</h3><div class="meta">' + esc([f.name, sizeText(f.size), nameOf(f.by), fmtS((f.at || '').slice(0,10))].filter(Boolean).join(' · ')) + '</div>' + (f.notes ? '<p class="pre">' + esc(f.notes) + '</p>' : '') + '<p style="margin-top:8px"><a class="btn sm" style="display:inline-block;text-decoration:none" data-f="' + esc(f.path) + '" target="_blank" rel="noopener">Open</a></p></div><button class="edit" data-act="editFile" data-id="' + f.id + '">Edit</button></div></div>').join('') : empty('No documents yet. Upload contracts, invoices, certificates, price lists, anything the team needs to get hold of. Up to 25 MB per file.'));
+  },
+
+  trips(){
+    const ts = list('trips'), up = ts.filter(t => daysTo(t.end || t.start) >= 0).sort(by('start')), past = ts.filter(t => daysTo(t.end || t.start) < 0).sort(by('start',-1));
+    const card = t => { const cl = t.checklist || [];
+      return '<div class="card ' + (daysTo(t.end || t.start) >= 0 ? 'hot' : '') + '"><div class="row"><div class="grow">' + (daysTo(t.end || t.start) >= 0 ? dueTag(daysTo(t.start) < 0 ? TODAY() : t.start).replace('Today', daysTo(t.start) < 0 ? 'On now' : 'Today') : '') + '<h3>' + esc(t.title) + '</h3><div class="meta">' + esc([t.place, fmt(t.start) + (t.end && t.end !== t.start ? ' to ' + fmt(t.end) : ''), names(t.who)].filter(Boolean).join(' · ')) + '</div>' +
+        [['Travel',t.travel],['Stay',t.stay],['Notes',t.notes]].filter(x => x[1]).map(x => '<p class="pre"><b>' + x[0] + ':</b> ' + esc(x[1]) + '</p>').join('') + (t.budget ? '<p><b>Budget:</b> ' + money(t.budget) + '</p>' : '') + '</div><button class="edit" data-act="editTrip" data-id="' + t.id + '">Edit</button></div>' +
+        (cl.length ? '<div style="margin-top:8px">' + cl.map((x,i) => '<div class="row ' + (x.done ? 'done' : '') + '" style="align-items:center;padding:4px 0"><button class="tick" role="checkbox" aria-checked="' + !!x.done + '" aria-label="' + esc(x.t) + '" data-act="tickTrip" data-id="' + t.id + '" data-i="' + i + '">' + (x.done ? '✓' : '') + '</button><h3 class="grow" style="font-size:16px;font-weight:600">' + esc(x.t) + '</h3></div>').join('') + '</div>' : '') + '</div>'; };
+    return title('Trips', 'Business travel', addBtn('addTrip','+ Trip')) +
+      sec('Upcoming', up.length ? up.map(card).join('') : empty('No trips planned.')) + (past.length ? sec('Past', past.map(card).join('')) : '');
+  },
+
+  details(){
+    const co = list('company').sort(by('label')), pp = list('people').sort(by('name')), ct = list('contacts').sort(by('name'));
+    const link = (v, pre) => v ? '<a href="' + pre + esc(v.replace(/\s/g,'')) + '">' + esc(v) + '</a>' : '';
+    return title('Details', 'Tap a value to copy it') +
+      '<p class="hint" style="margin:0 0 16px">Everyone on the team can see this page. Do not keep passwords, card numbers or PINs here.</p>' +
+      sec('Company', co.length ? co.map(x => '<div class="card"><div class="row"><div class="grow"><div class="meta" style="margin:0">' + esc(x.label) + '</div><button class="copy pre" data-act="copy" data-id="' + x.id + '">' + esc(x.value) + '</button>' + (x.notes ? '<div class="meta pre">' + esc(x.notes) + '</div>' : '') + '</div><button class="edit" data-act="editCompany" data-id="' + x.id + '">Edit</button></div></div>').join('') : empty('Add registration number, tax number, address, bank details for invoices, and so on.'), '<button class="btn sm" data-act="addCompany">+ Add</button>') +
+      sec('People', pp.length ? pp.map(x => '<div class="card"><div class="row"><div class="grow"><h3>' + esc(x.name) + '</h3><div class="meta">' + esc(x.role || '') + '</div><p>' + [link(x.phone,'tel:'), link(x.email,'mailto:')].filter(Boolean).join(' · ') + '</p>' + [['Birthday', x.birthday ? parse(x.birthday).toLocaleDateString('en-ZA',{day:'numeric',month:'long'}) : ''],['Emergency contact',x.emergency],['Notes',x.notes]].filter(y => y[1]).map(y => '<p class="pre"><b>' + y[0] + ':</b> ' + esc(y[1]) + '</p>').join('') + '</div><button class="edit" data-act="editPerson" data-id="' + x.id + '">Edit</button></div></div>').join('') : empty('A profile for each partner: role, phone, emergency contact.'), '<button class="btn sm" data-act="addPerson">+ Add</button>') +
+      sec('Contacts', ct.length ? ct.map(x => '<div class="card"><div class="row"><div class="grow"><h3>' + esc(x.name) + '</h3><div class="meta">' + esc([x.company, x.what].filter(Boolean).join(' · ')) + '</div><p>' + [link(x.phone,'tel:'), link(x.email,'mailto:')].filter(Boolean).join(' · ') + '</p>' + (x.notes ? '<p class="pre">' + esc(x.notes) + '</p>' : '') + '</div><button class="edit" data-act="editContact" data-id="' + x.id + '">Edit</button></div></div>').join('') : empty('Suppliers, couriers, accountant, landlord and other handy numbers.'), '<button class="btn sm" data-act="addContact">+ Add</button>');
+  },
+
+  lists(){
+    const c = cfg(), all = list('shopping'), used = [...new Set([...c.lists, ...all.map(i => i.list)])].filter(Boolean);
+    const show = used.filter(l => ui.listFilter === 'all' || ui.listFilter === l), ticked = all.filter(i => i.done).length;
+    const pick = ui.listFilter !== 'all' ? ui.listFilter : (ui.lastList || used[0]);
+    return title('Lists', all.filter(i => !i.done).length + ' to get') +
+      '<form class="inline" data-form="addItem"><input type="text" id="addItem" placeholder="Add an item" aria-label="Item" autocomplete="off" enterkeyhint="done"><select id="addList" aria-label="List" style="flex:0 0 38%">' + used.map(l => '<option' + (l === pick ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select><button class="btn" aria-label="Add item">+</button></form>' +
+      chips('listFilter', ui.listFilter, [['all','All'], ...used.map(l => [l,l])]) +
+      show.map(l => { const its = all.filter(i => i.list === l).sort((a,b) => (!!a.done - !!b.done) || (a.at < b.at ? -1 : 1)); if(!its.length) return ui.listFilter === 'all' ? '' : empty('Nothing on this list.');
+        return sec(esc(l), its.map(i => '<div class="card ' + (i.done ? 'done' : '') + '" style="padding-top:9px;padding-bottom:9px"><div class="row" style="align-items:center"><button class="tick" role="checkbox" aria-checked="' + !!i.done + '" aria-label="Got it" data-act="tickItem" data-id="' + i.id + '">' + (i.done ? '✓' : '') + '</button><div class="grow"><h3>' + esc(i.title) + '</h3>' + (i.note ? '<div class="meta">' + esc(i.note) + '</div>' : '') + '</div><span class="meta" style="margin:0">' + esc(nameOf(i.by)) + '</span><button class="edit" data-act="editItem" data-id="' + i.id + '">Edit</button></div></div>').join('')); }).join('') +
+      (all.length ? '' : empty('Nothing on any list.')) +
+      (ticked ? '<p><button class="btn line sm" data-act="clearTicked">Clear ' + ticked + ' ticked</button></p>' : '');
+  },
+
+  countdowns(){
+    const cs = list('countdowns'), up = cs.filter(c => daysTo(c.date) >= 0).sort(by('date')), past = cs.filter(c => daysTo(c.date) < 0).sort(by('date',-1));
+    return title('Countdowns', '', addBtn('addCountdown')) + (up.length ? up.map(cdCard).join('') : empty('Nothing to count down to. Add a launch, an expo, a deadline.')) + (past.length ? sec('Passed', past.map(cdCard).join('')) : '');
+  }
+};
+
+/* ---------- forms per thing ---------- */
+function crud(col, titleNew, titleEdit, fields, opts){
+  opts = opts || {};
+  return id => {
+    const cur = id ? get(col,id) : null, fs = typeof fields === 'function' ? fields(cur) : fields;
+    openForm({ title: cur ? titleEdit : titleNew, fields: fs, values: cur ? (opts.load ? opts.load(cur) : cur) : (opts.defaults ? opts.defaults() : {}),
+      onSave: async v => { const data = Object.assign({}, cur || {}, opts.clean ? await opts.clean(v, cur) : v, cur ? (opts.touch ? stamp() : {}) : stamp()); put(col, id || newId(), data); },
+      onDelete: cur ? () => { if(opts.onDelete) opts.onDelete(cur); del(col,id); } : null });
+  };
+}
+const formEvent = crud('events','New event','Edit event', () => [
+  {k:'title',label:'What',required:true},{k:'date',label:'Date',type:'date',required:true},{k:'end',label:'Last day, if more than one day',type:'date'},{k:'time',label:'Time',type:'time'},{k:'place',label:'Where'},
+  {k:'who',label:'Who (leave blank for everyone)',type:'checks',options:whoOpts()},{k:'notes',label:'Notes',type:'textarea',rows:3}], {defaults:() => ({date:ui.tab === 'calendar' ? ui.calDay : TODAY()}), clean: v => { if(v.end && v.end < v.date) throw new Error('The last day is before the first day.'); return v; }});
+const formReminder = crud('reminders','New reminder','Edit reminder', () => [
+  {k:'title',label:'Remind us to',required:true},{k:'due',label:'Due date',type:'date'},{k:'time',label:'Time',type:'time'},{k:'who',label:'For',type:'select',options:[['all','Everyone'], ...whoOpts()]},
+  {k:'repeat',label:'Repeat',type:'select',options:[['none','Does not repeat'],['weekly','Weekly'],['monthly','Monthly'],['yearly','Yearly']]},{k:'notes',label:'Notes',type:'textarea',rows:3}], {defaults:() => ({due:TODAY(), who:'all', repeat:'none'}), clean: v => { if(v.repeat !== 'none' && !v.due) throw new Error('A repeating reminder needs a due date.'); return v; }});
+const formNote = crud('notes','New note','Edit note', [{k:'title',label:'Title',required:true},{k:'body',label:'Note',type:'textarea',rows:10},{k:'pin',label:'Pin to the top',type:'check'}], {touch:true});
+const formIdea = crud('ideas','New idea','Edit idea', cur => [{k:'title',label:'The idea',required:true},{k:'body',label:'More detail',type:'textarea',rows:5}].concat(cur ? [{k:'status',label:'Status',type:'select',options:IDEA_STATUS}] : []), {clean: (v,cur) => cur ? v : Object.assign(v, {status:'New', votes:[me.email], comments:[]})});
+const formExpense = crud('expenses','New expense','Edit expense', cur => { const c = cfg(); return [
+  {k:'title',label:'What was it for',required:true},{k:'amount',label:'Amount in Rand',type:'amount',required:true},{k:'cat',label:'Category',type:'select',options:[...new Set([...c.categories, cur && cur.cat].filter(Boolean))]},
+  {k:'month',label:'Budget month',type:'month',required:true},{k:'from',label:'Paid from',type:'select',options:[['company','Company account'], ...whoOpts().map(([e,n]) => [e, n + ' (own pocket)'])]},
+  {k:'repaidBox',label:'The company has already paid this back',type:'check'},{k:'notes',label:'Notes',type:'textarea',rows:2},{k:'file',label:(cur && cur.photo ? 'Replace the slip photo' : 'Photo of the slip'),type:'photo'}]; },
+  {defaults:() => ({month:ui.tab === 'money' ? ui.moneyMonth : ym(new Date()), from:'company', cat:cfg().categories[0]}),
+   clean: async (v,cur) => { const o = {title:v.title, amount:v.amount, cat:v.cat, month:v.month, from:v.from, notes:v.notes};
+     if(!/^\d{4}-\d{2}$/.test(o.month)) throw new Error('Budget month should look like 2026-11.');
+     o.repaid = o.from !== 'company' && v.repaidBox ? ((cur && cur.repaid) || TODAY()) : '';
+     if(v.file){ o.photo = await uploadPhoto(v.file); if(cur && cur.photo) removePhoto(cur.photo); }
+     return o; }, load: cur => Object.assign({}, cur, {repaidBox: !!cur.repaid}), onDelete: cur => removePhoto(cur.photo)});
+const formPhoto = crud('photos','Add a photo','Edit photo', cur => [{k:'file',label:cur ? 'Replace the photo' : 'Photo',type:'photo',required:!cur},{k:'caption',label:'Description',type:'textarea',rows:3},{k:'date',label:'Date',type:'date',required:true}],
+  {defaults:() => ({date:TODAY()}), clean: async (v,cur) => { const o = {caption:v.caption, date:v.date}; if(v.file){ const p = await uploadPhoto(v.file); o.path = p.path; o.thumb = p.thumb; if(cur) removePhoto(cur); } return o; }, onDelete: cur => removePhoto(cur)});
+const formTrip = crud('trips','New trip','Edit trip', cur => [
+  {k:'title',label:'Trip name',required:true},{k:'place',label:'Where to'},{k:'start',label:'First day',type:'date',required:true},{k:'end',label:'Last day',type:'date'},{k:'who',label:'Who is going',type:'checks',options:whoOpts()},
+  {k:'travel',label:'Travel (flights, car hire, booking references)',type:'textarea',rows:3},{k:'stay',label:'Where you are staying',type:'textarea',rows:2},{k:'budget',label:'Budget in Rand',type:'amount',ph:'5000'},{k:'checkText',label:'Checklist, one item per line',type:'textarea',rows:5},{k:'notes',label:'Notes',type:'textarea',rows:3}],
+  {load: cur => Object.assign({}, cur, {checkText:(cur.checklist || []).map(x => x.t).join('\n')}), clean: (v,cur) => { if(v.end && v.end < v.start) throw new Error('The last day is before the first day.'); const old = (cur && cur.checklist) || []; const o = Object.assign({}, v); delete o.checkText;
+    o.checklist = v.checkText.split('\n').map(s => s.trim()).filter(Boolean).map(t => ({t, done: old.some(x => x.t === t && x.done)})); return o; }});
+const formCompany = crud('company','Company detail','Edit detail', [{k:'label',label:'Label',required:true,ph:'Company registration number'},{k:'value',label:'Value',type:'textarea',rows:2,required:true},{k:'notes',label:'Notes'}], {touch:true});
+const formPerson = crud('people','Person','Edit person', [{k:'name',label:'Name',required:true},{k:'role',label:'Role'},{k:'phone',label:'Phone',type:'tel'},{k:'email',label:'Email',type:'email'},{k:'birthday',label:'Birthday',type:'date'},{k:'emergency',label:'Emergency contact (name and number)'},{k:'notes',label:'Notes',type:'textarea',rows:3}], {touch:true});
+const formContact = crud('contacts','Contact','Edit contact', [{k:'name',label:'Name',required:true},{k:'company',label:'Company'},{k:'what',label:'What for',ph:'Courier, accountant, supplier'},{k:'phone',label:'Phone',type:'tel'},{k:'email',label:'Email',type:'email'},{k:'notes',label:'Notes',type:'textarea',rows:2}], {touch:true});
+const formFile = crud('files','Upload a document','Edit document', cur => [{k:'file',label:cur ? 'Replace the file' : 'File',type:'file',required:!cur},{k:'title',label:'Title',required:true},{k:'folder',label:'Folder',required:true,list:[...new Set([...cfg().folders, ...list('files').map(f => f.folder)])].filter(Boolean)},{k:'notes',label:'Notes',type:'textarea',rows:3}],
+  {defaults:() => ({folder: ui.docFilter !== 'all' ? ui.docFilter : ''}), clean: async (v,cur) => { const o = {title:v.title, folder:v.folder, notes:v.notes}; if(v.file){ Object.assign(o, await uploadFile(v.file)); if(cur && cur.path) sb.storage.from('files').remove([cur.path]).then(() => {}); } return o; },
+   onDelete: cur => { if(cur.path) sb.storage.from('files').remove([cur.path]).then(() => {}); }});
+const formCountdown = crud('countdowns','New countdown','Edit countdown', [{k:'title',label:'Counting down to',required:true},{k:'date',label:'Date',type:'date',required:true},{k:'notes',label:'Notes'}]);
+const formItem = crud('shopping','Item','Edit item', () => [{k:'title',label:'Item',required:true},{k:'list',label:'List',required:true,list:cfg().lists},{k:'note',label:'Note (size, quantity, where)'}]);
+
+function bump(due, repeat){ const d = parse(due); if(repeat === 'weekly') d.setDate(d.getDate()+7); else if(repeat === 'monthly') d.setMonth(d.getMonth()+1); else d.setFullYear(d.getFullYear()+1); return ymd(d); }
+function shiftMonth(s, n){ const d = parse(s + '-01'); d.setMonth(d.getMonth() + n); return ym(d); }
+
+async function openViewer(p, cap, meta, onEdit){
+  $('#vImg').removeAttribute('src'); $('#vImg').dataset.p = p.path; $('#vCap').textContent = cap || ''; $('#vMeta').textContent = meta || '';
+  $('#vEdit').hidden = !onEdit; $('#vEdit').onclick = () => { $('#viewer').close(); onEdit(); };
+  $('#viewer').showModal(); hydrate();
+}
+$('#vClose').onclick = () => $('#viewer').close();
+
+let xlsxLoading = null;
+function loadXlsx(){ return window.XLSX ? Promise.resolve() : (xlsxLoading = xlsxLoading || new Promise((res,rej) => { const s = document.createElement('script'); s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'; s.onload = res; s.onerror = () => { xlsxLoading = null; rej(new Error('Could not load the Excel tool. Check your connection and try again.')); }; document.head.appendChild(s); })); }
+async function exportXlsx(){
+  try{
+    toast('Building the Excel file'); await loadXlsx();
+    const c = cfg(), mon = ui.moneyMonth, all = list('expenses').sort(by('month')), es = all.filter(e => e.month === mon);
+    const row = e => ({'Budget month':e.month, 'What':e.title, 'Category':e.cat, 'Amount (R)':e.amount, 'Paid from':nameOf(e.from), 'Paid back':e.from === 'company' ? '' : (e.repaid ? 'Yes, ' + e.repaid : 'No, still owed'), 'Notes':e.notes || ''});
+    const byCat = {}; es.forEach(e => byCat[e.cat] = (byCat[e.cat] || 0) + e.amount);
+    const cats = [...new Set([...c.categories, ...Object.keys(byCat)])];
+    const sum = cats.map(k => ({'Category':k, 'Budget (R)':Number(c.budgets[k]) || 0, 'Spent (R)':Math.round((byCat[k] || 0)*100)/100, 'Left (R)':Math.round(((Number(c.budgets[k]) || 0) - (byCat[k] || 0))*100)/100}));
+    sum.push({'Category':'TOTAL', 'Budget (R)':sum.reduce((a,r) => a + r['Budget (R)'],0), 'Spent (R)':Math.round(sum.reduce((a,r) => a + r['Spent (R)'],0)*100)/100, 'Left (R)':Math.round(sum.reduce((a,r) => a + r['Left (R)'],0)*100)/100});
+    const owed = owedMap(), wb = XLSX.utils.book_new(), add = (rows, name, empty) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [empty]), name);
+    add(sum, 'Summary ' + mon, {});
+    add(es.map(row), 'Entries ' + mon, {'What':'No entries'});
+    add(Object.keys(owed).map(k => ({'Partner':nameOf(k), 'Still owed (R)':Math.round(owed[k]*100)/100})), 'Owed to partners', {'Partner':'Nobody is owed anything'});
+    add(all.map(row), 'All entries', {'What':'No entries'});
+    XLSX.writeFile(wb, 'RAW-spending-' + mon + '.xlsx');
+  }catch(e){ toast(e.message || 'Export failed.'); }
+}
+
+/* ---------- team and settings ---------- */
+function renderSettings(){
+  const c = cfg(), th = (() => { try { return localStorage.getItem('raw-theme') || 'auto'; } catch(e){ return 'auto'; } })();
+  $('#setBody').innerHTML = '<h2>Team and settings</h2>' +
+    '<div class="sechd"><h2>Who has access</h2>' + (me.is_admin ? '<button class="btn sm" data-act="addMember">+ Add</button>' : '') + '</div>' +
+    M.map(m => '<div class="card"><div class="row"><div class="grow"><h3>' + esc(m.name || m.email) + (m.is_admin ? ' <span class="tag red">Admin</span>' : '') + '</h3><div class="meta">' + esc(m.email) + '</div></div>' + (me.is_admin ? '<button class="edit" data-act="editMember" data-id="' + esc(m.email) + '">Edit</button>' : '') + '</div></div>').join('') +
+    '<p class="hint" style="margin-top:8px">' + (me.is_admin ? 'Only the people listed here can open the portal. They sign in with exactly this email address.' : 'Only an admin can add or remove people.') + '</p>' +
+    '<div class="sechd" style="margin-top:18px"><h2>Portal</h2></div>' +
+    '<p><button class="btn line" data-act="editPortal">Name, categories and lists</button></p>' +
+    '<div class="sechd" style="margin-top:18px"><h2>Look</h2></div>' + chips('theme', th, [['auto','Follow phone'],['dark','Dark'],['light','Light']]) +
+    '<div class="dlbtns" style="margin-top:18px"><button class="btn line" data-act="closeSettings">Close</button><span class="sp"></span><button class="edit" data-act="signOut">Sign out (' + esc(me.email) + ')</button></div>';
+}
+function memberForm(email){
+  const cur = email ? M.find(m => m.email === email) : null;
+  openForm({ title: cur ? 'Edit team member' : 'Add team member', values: cur || {},
+    fields: [{k:'name',label:'Name',required:true}].concat(cur ? [] : [{k:'email',label:'Email they sign in with',type:'email',required:true}]).concat([{k:'is_admin',label:'Admin (can add and remove people)',type:'check'}]),
+    onSave: async v => {
+      if(cur){ if(cur.email === me.email && !v.is_admin) throw new Error('You cannot remove your own admin rights. Ask another admin.');
+        const {error} = await sb.from('allowed_emails').update({name:v.name, is_admin:v.is_admin}).eq('email',cur.email); if(error) throw error; }
+      else { const e = v.email.toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw new Error('That does not look like an email address.');
+        const {error} = await sb.from('allowed_emails').insert({email:e, name:v.name, is_admin:v.is_admin}); if(error) throw new Error(error.code === '23505' ? 'That email is already on the list.' : error.message); }
+      await loadMembers(); me = M.find(x => x.email === me.email) || me; renderSettings(); render();
+    },
+    deleteLabel: 'Remove access',
+    onDelete: cur && cur.email !== me.email ? async () => { const {error} = await sb.from('allowed_emails').delete().eq('email',cur.email); if(error) toast(error.message); await loadMembers(); renderSettings(); render(); } : null });
+}
+function applyTheme(t){ if(t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
+try { applyTheme(localStorage.getItem('raw-theme') || 'auto'); } catch(e){}
+
+/* ---------- every tap ---------- */
+const A = {
+  tab: id => showTab(id),
+  settings: () => { renderSettings(); $('#settings').showModal(); },
+  closeSettings: () => $('#settings').close(),
+  signOut: () => { $('#settings').close(); sb.auth.signOut(); },
+  addMember: () => memberForm(), editMember: id => memberForm(id),
+  theme: id => { try { localStorage.setItem('raw-theme', id); } catch(e){} applyTheme(id); renderSettings(); },
+  editPortal: () => { const c = cfg(); openForm({ title:'Portal settings', values:{name:c.name, cats:c.categories.join('\n'), lists:c.lists.join('\n'), folders:c.folders.join('\n')},
+    fields:[{k:'name',label:'Portal name',required:true},{k:'cats',label:'Expense categories, one per line',type:'textarea',rows:8,required:true},{k:'lists',label:'Shopping lists, one per line',type:'textarea',rows:5,required:true},{k:'folders',label:'Document folders, one per line',type:'textarea',rows:5,required:true}],
+    onSave: v => { const lines = s => [...new Set(s.split('\n').map(x => x.trim()).filter(Boolean))]; saveCfg({name:v.name, categories:lines(v.cats), lists:lines(v.lists), folders:lines(v.folders)}); } }); },
+  editNotice: () => openForm({ title:'Notice board', values:{notice:cfg().notice}, fields:[{k:'notice',label:'Message for everyone',type:'textarea',rows:5}], onSave: v => saveCfg({notice:v.notice}) }),
+
+  addEvent: () => formEvent(), editEvent: id => formEvent(id),
+  calDay: id => { ui.calDay = id; if(id.slice(0,7) !== ui.calMonth) ui.calMonth = id.slice(0,7); render(); },
+  calPrev: () => { ui.calMonth = shiftMonth(ui.calMonth,-1); render(); }, calNext: () => { ui.calMonth = shiftMonth(ui.calMonth,1); render(); },
+
+  addReminder: () => formReminder(), editReminder: id => formReminder(id),
+  remFilter: id => { ui.remFilter = id; render(); }, toggleDone: () => { ui.showDone = !ui.showDone; render(); },
+  tickReminder: id => { const r = get('reminders',id); if(!r) return;
+    if(r.done) patch('reminders',id,{done:false, doneAt:''});
+    else if(r.repeat && r.repeat !== 'none' && r.due){ patch('reminders',id,{due:bump(r.due,r.repeat)}); toast('Done. Next one is ' + fmt(bump(r.due,r.repeat))); }
+    else patch('reminders',id,{done:true, doneAt:new Date().toISOString(), doneBy:me.email}); },
+
+  addNote: () => formNote(), editNote: id => formNote(id),
+  addIdea: () => formIdea(), editIdea: id => formIdea(id),
+  ideaSort: id => { ui.ideaSort = id; render(); },
+  openIdea: id => { ui.openIdea = ui.openIdea === id ? null : id; render(); },
+  vote: id => { const i = get('ideas',id); if(!i) return; const v = i.votes || []; patch('ideas',id,{votes: v.includes(me.email) ? v.filter(x => x !== me.email) : [...v, me.email]}); },
+
+  addExpense: () => formExpense(), editExpense: id => formExpense(id),
+  monPrev: () => { ui.moneyMonth = shiftMonth(ui.moneyMonth,-1); render(); }, monNext: () => { ui.moneyMonth = shiftMonth(ui.moneyMonth,1); render(); },
+  budgets: () => { const c = cfg(); openForm({ title:'Monthly budgets', values:Object.fromEntries(c.categories.map((k,i) => ['b'+i, c.budgets[k] || ''])),
+    fields:[{type:'note',label:'How much the company plans to spend per category each month. Leave blank for no budget.'}].concat(c.categories.map((k,i) => ({k:'b'+i, label:k, type:'amount', ph:'0'}))),
+    onSave: v => { const b = {}; c.categories.forEach((k,i) => { if(v['b'+i]) b[k] = v['b'+i]; }); saveCfg({budgets:b}); } }); },
+  repay: id => { const o = owedMap()[id] || 0; openForm({ title:'Pay back ' + nameOf(id), saveLabel:'Mark as paid back', values:{date:TODAY()},
+    fields:[{type:'note',label:'This marks everything ' + esc(nameOf(id)) + ' paid from their own pocket as paid back: <b>' + money(o) + '</b>. It does not move any money, it only updates the record.'},{k:'date',label:'Date paid back',type:'date',required:true}],
+    onSave: v => { const rows = list('expenses').filter(e => e.from === id && !e.repaid); rows.forEach(e => { const {id:eid, ...d} = e; D.expenses[eid] = Object.assign(d,{repaid:v.date}); }); render();
+      return sb.from('docs').upsert(rows.map(e => ({collection:'expenses', id:e.id, data:D.expenses[e.id], updated_at:new Date().toISOString()}))).then(({error}) => { if(error) throw error; }); } }); },
+  viewReceipt: id => { const e = get('expenses',id); if(e && e.photo) openViewer(e.photo, e.title + ', ' + money(e.amount), ''); },
+  exportXlsx,
+
+  addPhoto: () => formPhoto(), morePhotos: () => { ui.photoLimit += 30; render(); },
+  viewPhoto: id => { const p = get('photos',id); if(p) openViewer(p, p.caption, nameOf(p.by) + ' · ' + fmt(p.date), () => formPhoto(id)); },
+
+  addTrip: () => formTrip(), editTrip: id => formTrip(id),
+  tickTrip: (id, el) => { const t = get('trips',id); if(!t) return; const cl = (t.checklist || []).map((x,i) => i === +el.dataset.i ? {t:x.t, done:!x.done} : x); patch('trips',id,{checklist:cl}); },
+
+  addCompany: () => formCompany(), editCompany: id => formCompany(id),
+  addPerson: () => formPerson(), editPerson: id => formPerson(id),
+  addContact: () => formContact(), editContact: id => formContact(id),
+  copy: id => { const x = get('company',id); if(!x) return; (navigator.clipboard ? navigator.clipboard.writeText(x.value) : Promise.reject()).then(() => toast('Copied'), () => toast('Could not copy. Press and hold the text instead.')); },
+
+  editItem: id => formItem(id), listFilter: id => { ui.listFilter = id; render(); },
+  tickItem: id => { const i = get('shopping',id); if(i) patch('shopping',id,{done:!i.done}); },
+  clearTicked: () => { const ids = list('shopping').filter(i => i.done).map(i => i.id); ids.forEach(id => delete D.shopping[id]); render(); sb.from('docs').delete().eq('collection','shopping').in('id',ids).then(({error}) => { if(error) toast('Could not clear. ' + error.message); }); },
+
+  addFile: () => formFile(), editFile: id => formFile(id), docFilter: id => { ui.docFilter = id; render(); },
+  addCountdown: () => formCountdown(), editCountdown: id => formCountdown(id)
+};
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if(!el || !me) return; const fn = A[el.dataset.act]; if(fn){ if(el.tagName === 'A') e.preventDefault(); fn(el.dataset.id, el); } });
+$('#view').addEventListener('submit', e => {
+  e.preventDefault(); const f = e.target;
+  if(f.dataset.form === 'addItem'){ const inp = $('#addItem'), t = inp.value.trim(); if(!t) return; const l = $('#addList').value; ui.lastList = l; inp.value = ''; ui.focus = 'addItem'; put('shopping', newId(), Object.assign({title:t, list:l, done:false}, stamp())); }
+  if(f.dataset.form === 'comment'){ const id = f.dataset.id, inp = document.getElementById('c-' + id), t = inp.value.trim(), i = get('ideas',id); if(!t || !i) return; inp.value = ''; patch('ideas',id,{comments:[...(i.comments || []), Object.assign({text:t}, stamp())]}); }
+});
+
+/* ---------- sign-in ---------- */
+function gate(text, signedIn){
+  $('#app').hidden = true; $('#gate').hidden = false; $('#gateText').textContent = text;
+  $('#gGoogle').hidden = signedIn; $('#gEmailBox').hidden = signedIn; $('#gOut').hidden = !signedIn;
+}
+async function handleUser(u){
+  if(chan){ sb.removeChannel(chan); chan = null; }
+  me = null; loaded = false; D = {};
+  if(!u){ gate('Members only. Sign in to continue.', false); return; }
+  const email = (u.email || '').toLowerCase();
+  try{
+    await loadMembers();
+    me = M.find(m => m.email === email) || null;
+    if(!me){ gate(email + ' is not on the team list. Ask an admin to add this exact address, or sign out and use a different account.', true); return; }
+    await loadAll();
+  }catch(e){ me = null; gate('Could not reach the portal data. Check your connection and try again. ' + (e.message || ''), true); return; }
+  if(/[#&?](access_token|code)=/.test(location.href)){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
+  subscribe();
+  $('#gate').hidden = true; $('#app').hidden = false; $('#gateErr').textContent = '';
+  showTab((location.hash || '').slice(1) || 'today');
+}
+function boot(){
+  if(!window.supabase){ gate('The page could not load fully. Check your connection and reload.', false); $('#gGoogle').hidden = true; $('#gEmailBox').hidden = true; return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+  const back = location.origin + location.pathname;
+  $('#gGoogle').onclick = async () => { $('#gateErr').textContent = ''; const {error} = await sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:back, queryParams:{prompt:'select_account'}}}); if(error) $('#gateErr').textContent = error.message; };
+  $('#gLink').onclick = async () => { const e = $('#gEmail').value.trim().toLowerCase(); if(!e){ $('#gateErr').textContent = 'Type your email address first.'; return; }
+    $('#gLink').disabled = true; const {error} = await sb.auth.signInWithOtp({email:e, options:{emailRedirectTo:back}}); $('#gLink').disabled = false;
+    $('#gateErr').textContent = error ? error.message : 'Check your inbox for a sign-in link, then open it on this device.'; };
+  $('#gOut').onclick = () => sb.auth.signOut();
+  const err = new URLSearchParams(location.hash.slice(1) || location.search).get('error_description');
+  if(err) $('#gateErr').textContent = err.replace(/\+/g,' ');
+  sb.auth.onAuthStateChange((event, session) => {
+    const u = session && session.user, id = u ? u.id : null;
+    if(id === curUid && event !== 'INITIAL_SESSION') return;   // ignore token refreshes
+    if(id === curUid && me) return;
+    curUid = id; setTimeout(() => handleUser(u), 0);
+  });
+}
+boot();
+})();
+</script>
+</body>
+</html>

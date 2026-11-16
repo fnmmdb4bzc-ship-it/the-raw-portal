@@ -1,0 +1,6 @@
+-- The Raw Portal: database setup (applied 16 November 2026). Kept as a record.
+-- Tables: allowed_emails (email, name, is_admin) and docs (collection, id, data jsonb, updated_at).
+-- Functions private.is_member() and private.is_admin() check the signed-in email against allowed_emails.
+-- Row level security: members can read the team list and read or change docs; only admins can change the team list.
+-- Realtime is on for both tables. Private storage buckets: photos (5 MB, images) and files (25 MB, any type), members only.
+-- The full statements are in the Supabase project under Database > Migrations: raw_portal_setup and documents_bucket.
