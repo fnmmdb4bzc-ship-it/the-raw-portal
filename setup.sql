@@ -1,6 +1,8 @@
--- The Raw Portal: database setup (applied 16 November 2026). Kept as a record.
--- Tables: allowed_emails (email, name, is_admin) and docs (collection, id, data jsonb, updated_at).
--- Functions private.is_member() and private.is_admin() check the signed-in email against allowed_emails.
--- Row level security: members can read the team list and read or change docs; only admins can change the team list.
--- Realtime is on for both tables. Private storage buckets: photos (5 MB, images) and files (25 MB, any type), members only.
--- The full statements are in the Supabase project under Database > Migrations: raw_portal_setup and documents_bucket.
+-- The Raw Portal: summary of the database setup (applied 16 and 24 November 2026). The full statements are in
+-- Supabase > Database > Migrations: raw_portal_setup, documents_bucket, raw_app_permissions_v2, raw_app_engine_schedule.
+-- allowed_emails: who may sign in, with access ('full' or 'custom'), perms per area ('view'/'edit'), brands, briefing, tz, phone.
+-- docs: every record (collection, id, data). Row level security calls private.can(collection, data, for_write) for every read and write.
+-- merge_doc / claim_doc: safe partial updates; claim_doc refuses if someone already took the item (no double payments).
+-- storage buckets 'files' (25 MB, any type) and 'photos' (images), private; restricted people only open files attached to records they can see.
+-- push_subscriptions: each person's devices. app_config and sent_log: server only.
+-- pg_cron job 'raw-engine' every 5 minutes, and a trigger on new notifications, call the 'engine' edge function.
