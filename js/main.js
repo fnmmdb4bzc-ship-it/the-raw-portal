@@ -136,6 +136,7 @@ const A = {
   theme: id => setTheme(id || (effectiveTheme() === 'dark' ? 'light' : 'dark')),
   savePhone: () => { const v = $('#myPhone').value.trim(); sb.rpc('set_my_profile', {p_tz: null, p_phone: v}).then(({error}) => { if(error) toast(error.message); else { toast('Saved.'); loadMembers().then(render); } }); },
   pushOn: () => pushOn(), pushOff: () => pushOff(), testPush: () => testPush(),
+  addProfile: () => profileForm(), editProfile: id => profileForm(id),
   addMember: () => memberForm(), editMember: id => memberForm(id), editRoles: () => rolesForm(), editSetup: () => setupForm(),
   editNotice: () => openForm({title:'Notice', values:{notice: cfg().notice}, fields:[{k:'notice', label:'Message for everyone on the dashboard', type:'textarea', rows:4}], onSave: v => saveCfg({notice: v.notice})}),
   signOut: () => sb.auth.signOut()
@@ -189,7 +190,7 @@ async function handleUser(u){
   const email = (u.email || '').toLowerCase();
   try{
     await loadMembers();
-    me = M.find(m => m.email === email) || null;
+    me = MEMBERS.find(m => m.email === email) || null;
     if(!me){ gate(email + ' is not on the team list. Ask an admin to add this exact address, or sign out and use a different account.', true); return; }
     await loadAll();
   }catch(e){ me = null; gate('Could not reach the portal. Check your connection and try again. ' + (e.message || ''), true); return; }

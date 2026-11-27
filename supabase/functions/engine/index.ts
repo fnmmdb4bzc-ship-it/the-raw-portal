@@ -52,15 +52,17 @@ Deno.serve(async (req: Request) => {
   const now = Date.now();
   const all: Doc[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await admin.from("docs").select("collection,id,data").in("collection", ["tasks", "settings"]).range(from, from + 999);
+    const { data, error } = await admin.from("docs").select("collection,id,data").in("collection", ["tasks", "settings", "team"]).range(from, from + 999);
     if (error) return json({ error: error.message }, 500);
     all.push(...(data as Doc[]));
     if (!data || data.length < 1000) break;
   }
   const settings = all.find(d => d.collection === "settings" && d.id === "main")?.data || {};
   const tasks = all.filter(d => d.collection === "tasks");
+  const profiles = Object.fromEntries(all.filter(d => d.collection === "team").map(d => ["p:" + d.id, d.data?.name || "someone"]));
+  const profName = (e: string) => profiles[e] || "someone";
   const { data: members } = await admin.from("allowed_emails").select("email,name,tz,briefing,is_admin,access");
-  const nameOf = (e: string) => (members || []).find((m: any) => m.email === e)?.name || (e || "").split("@")[0];
+  const nameOf = (e: string) => String(e).startsWith("p:") ? profName(e) : (members || []).find((m: any) => m.email === e)?.name || (e || "").split("@")[0];
   const escalateTo: string[] = (Array.isArray(settings.escalate) && settings.escalate.length ? settings.escalate : (members || []).filter((m: any) => m.is_admin).map((m: any) => m.email));
 
   // which reminders were already sent
@@ -74,21 +76,26 @@ Deno.serve(async (req: Request) => {
     if (isNaN(due)) continue;
     const offs: number[] = Array.isArray(d.reminders) ? d.reminders.map(Number).filter((x: number) => x >= 0) : [72, 24, 3, 0];
     const ref = "tasks/" + t.id;
+    // people without a login yet: remind whoever created the action instead
+    const ownerIsProfile = String(d.owner).startsWith("p:");
+    const to = ownerIsProfile ? d.by : d.owner;
+    if (!to || String(to).startsWith("p:")) continue;
+    const forWho = ownerIsProfile ? ` (for ${profName(d.owner)})` : "";
     const passed = offs.filter(h => now >= due - h * H).sort((a, b) => a - b);
     if (passed.length && now < due + 2 * H) {
       const keys = passed.map(h => `rem:${t.id}:${d.due}:${h}`);
       const h = passed[0];
       const when = h === 0 ? "is due now" : h < 24 ? `is due in ${h} hours` : `is due in ${Math.round(h / 24)} days`;
       const title = d.status === "external" ? "Follow-up due" : d.status === "approval" ? "Approval needed" : d.status === "payment" ? "Payment action due" : "Reminder";
-      groups.push({ keys, send: () => notify(d.owner, title, `${d.title} ${when}.`, ref, "reminder") });
+      groups.push({ keys, send: () => notify(to, title, `${d.title}${forWho} ${when}.`, ref, "reminder") });
     }
     if (offs.length && now >= due + 24 * H) {
       const n = Math.floor((now - due) / (24 * H));
-      groups.push({ keys: [`od:${t.id}:${d.due}:${n}`], send: () => notify(d.owner, "Overdue", `${d.title} is overdue by ${n} day${n === 1 ? "" : "s"}. Seeing a reminder does not complete the task.`, ref, "overdue") });
+      groups.push({ keys: [`od:${t.id}:${d.due}:${n}`], send: () => notify(to, "Overdue", `${d.title}${forWho} is overdue by ${n} day${n === 1 ? "" : "s"}. Seeing a reminder does not complete the task.`, ref, "overdue") });
     }
     if ((d.priority === "critical" || d.escalate === true) && now > due + H) {
       const key = `esc:${t.id}:${d.due}`;
-      const people = escalateTo.filter(e => e && e !== d.owner);
+      const people = escalateTo.filter(e => e && e !== d.owner && !String(e).startsWith("p:"));
       if (people.length) groups.push({ keys: [key], send: async () => { let n = 0; for (const p of people) n += await notify(p, "Escalation", `${d.priority === "critical" ? "Critical" : "Important"} task overdue: ${d.title} (owner: ${nameOf(d.owner)}).`, ref, "escalation"); return n; } });
     }
   }

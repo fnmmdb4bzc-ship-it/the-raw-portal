@@ -125,8 +125,11 @@ R.settings = () => {
   h += sec('Look', chips('theme', th, [['auto','Follow my phone'], ['dark','Dark'], ['light','Light']]));
   h += '<button class="btn ghost" data-act="signOut">Sign out</button>';
   h += '</div><div>';
-  h += sec('Who has access', '<div class="list">' + M.map(m => '<div class="item' + (isAdmin() ? ' click" data-act="editMember" data-id="' + esc(m.email) : '') + '">' + avatar(m.email) + '<div class="main"><div class="t">' + esc(m.name || m.email) + (m.is_admin ? ' <span class="b b-red">Admin</span>' : '') + '</div><div class="meta">' + esc(m.title || '') + '<span>' + esc(m.email) + '</span><span class="b">' + esc(m.access === 'full' ? 'Full access' : 'Selected areas') + '</span>' + (m.briefing ? '<span class="b b-teal">Daily briefing</span>' : '') + ((m.brands || []).length ? '<span>' + esc(m.brands.join(', ')) + ' only</span>' : '') + '</div></div></div>').join('') + '</div>' +
+  h += sec('Who has access', '<div class="list">' + MEMBERS.map(m => '<div class="item' + (isAdmin() ? ' click" data-act="editMember" data-id="' + esc(m.email) : '') + '">' + avatar(m.email) + '<div class="main"><div class="t">' + esc(m.name || m.email) + (m.is_admin ? ' <span class="b b-red">Admin</span>' : '') + '</div><div class="meta">' + esc(m.title || '') + '<span>' + esc(m.email) + '</span><span class="b">' + esc(m.access === 'full' ? 'Full access' : 'Selected areas') + '</span>' + (m.briefing ? '<span class="b b-teal">Daily briefing</span>' : '') + ((m.brands || []).length ? '<span>' + esc(m.brands.join(', ')) + ' only</span>' : '') + '</div></div></div>').join('') + '</div>' +
     '<p class="hint" style="margin-top:8px">' + (isAdmin() ? 'People sign in with exactly these email addresses. Each Gmail address must also be a test user in Google Cloud.' : 'Only an admin can change who has access.') + '</p>', isAdmin() ? addBtn('addMember', 'Person') : '');
+  const profs = M.filter(m => m.profile);
+  h += sec('Team without access yet', (profs.length ? '<div class="list">' + profs.map(m => '<div class="item' + (isAdmin() ? ' click" data-act="editProfile" data-id="' + esc(m.email) : '') + '">' + avatar(m.email) + '<div class="main"><div class="t">' + esc(m.name) + '</div><div class="meta">' + esc(m.title || '') + (m.phone ? '<span>' + esc(m.phone) + '</span>' : '') + '<span class="b">Cannot sign in</span></div></div></div>').join('') + '</div>' : empty('Nobody yet.')) +
+    '<p class="hint" style="margin-top:8px">They can be made responsible for actions or added as collaborators. Their reminders go to whoever created the action. ' + (isAdmin() ? 'Tap a person to give them access later; their actions move across with them.' : '') + '</p>', isAdmin() ? addBtn('addProfile', 'Person') : '');
   if(isAdmin()){
     h += sec('Who does what in the workflows', '<div class="list">' + ROLES.map(([k, l]) => '<div class="item"><div class="main"><div class="t">' + esc(l) + '</div></div><div class="side"><b style="color:var(--ink)">' + esc(nameOf(roleEmail(k))) + '</b></div></div>').join('') + '</div>', '<button class="link" data-act="editRoles">Change</button>');
     h += sec('Business setup', '<div class="list">' +
@@ -179,7 +182,7 @@ const PRESETS = {
   marketing: {label:'Marketing assistant', perms:{marketing:'edit', calendar:'view', docs:'view'}},
 };
 function memberForm(email){
-  const cur = email ? M.find(m => m.email === email) : null, perms = (cur && cur.perms) || {};
+  const cur = email ? MEMBERS.find(m => m.email === email) : null, perms = (cur && cur.perms) || {};
   const accessVal = !cur ? 'full' : cur.access === 'full' ? 'full' : Object.keys(PRESETS).find(k => JSON.stringify(PRESETS[k].perms) === JSON.stringify(perms)) || 'custom';
   const vals = Object.assign({}, cur || {is_admin:false}, {accessSel: accessVal, brandsSel: (cur && cur.brands) || []});
   MODULES.forEach(([k]) => vals['p_' + k] = perms[k] || 'none');
@@ -209,6 +212,31 @@ function memberForm(email){
     },
     deleteLabel:'Remove access',
     onDelete: cur && cur.email !== me.email ? async () => { const {error} = await sb.from('allowed_emails').delete().eq('email', cur.email); if(error) toast(error.message); await loadMembers(); render(); } : null });
+}
+function profileForm(pid){
+  const id = pid ? pid.slice(2) : null, cur = id ? get('team', id) : null;
+  openForm({ title: cur ? cur.name : 'Add a team member without access', values: cur || {},
+    intro: cur ? '<p class="hint" style="margin-top:0">To let ' + esc(cur.name) + ' sign in, fill in the email they will use and tick the box. Everything assigned to them moves to their login.</p>' : '<p class="hint" style="margin-top:0">They will not be able to sign in yet. You can still give them actions and add them as collaborators.</p>',
+    fields: [{k:'name', label:'Name', required:true}, {k:'title', label:'Role'}, {k:'phone', label:'WhatsApp number', type:'tel'}]
+      .concat(cur ? [{type:'section', label:'Give access'}, {k:'email', label:'Email they sign in with', type:'email'}, {k:'grant', label:'Give them full access now', type:'check'}] : []),
+    onSave: async v => {
+      if(!cur){ put('team', newId(), {name: v.name, title: v.title, phone: v.phone, by: me.email, at: new Date().toISOString()}); toast(v.name + ' added.'); return; }
+      if(!v.grant){ patch('team', id, {name: v.name, title: v.title, phone: v.phone}); return; }
+      const e = (v.email || '').toLowerCase().trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw new Error('Add the email address they will sign in with.');
+      const {error} = await sb.from('allowed_emails').insert({email: e, name: v.name, title: v.title, phone: v.phone, access:'full'});
+      if(error) throw new Error(error.code === '23505' ? 'That email already has access.' : error.message);
+      // move everything that names this person to their new login
+      const from = JSON.stringify(pid), to = JSON.stringify(e);
+      for(const col of Object.keys(D)){ if(col === 'team') continue;
+        for(const [rid, d] of Object.entries(D[col])){ const txt = JSON.stringify(d); if(txt.includes(from)) put(col, rid, JSON.parse(txt.split(from).join(to))).catch(() => {}); } }
+      const s = cfg().roles || {}; if(Object.values(s).includes(pid)){ const r = {}; Object.keys(s).forEach(k => r[k] = s[k] === pid ? e : s[k]); saveCfg({roles: r}); }
+      del('team', id);
+      await loadMembers(); render();
+      toast(v.name + ' now has access. If ' + e + ' is a Gmail address, it must also be added as a Google test user.');
+    },
+    onDelete: cur ? () => del('team', id) : null, deleteLabel: 'Remove'
+  });
 }
 function rolesForm(){
   const c = cfg(), vals = {};

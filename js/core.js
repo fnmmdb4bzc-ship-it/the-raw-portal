@@ -104,7 +104,14 @@ const ROLES = [
 ];
 
 /* ---------- state ---------- */
-let sb = null, me = null, M = [], D = {}, chan = null, loaded = false;
+let sb = null, me = null, M = [], MEMBERS = [], D = {}, chan = null, loaded = false;
+// People without a login yet: they can be made responsible or collaborators, and get access later
+const isProfile = e => typeof e === 'string' && e.startsWith('p:');
+function mergePeople(){
+  const profs = Object.entries(D.team || {}).map(([id, d]) => Object.assign({}, d, {email:'p:' + id, profile:true, access:'none', is_admin:false})).sort(by('name'));
+  M = MEMBERS.concat(profs);
+  if(me) me = MEMBERS.find(x => x.email === me.email) || me;
+}
 const ui = { route:'home', sub:'', brand:'all', calMonth: ym(new Date()), calDay: TODAY(), calF:{who:'', mod:'', pri:''}, taskF:{who:'', status:'open', mod:'', pri:''},
   finPeriod:'week', finMonth: ym(new Date()), mineView:'due', briefTab:'today', ideaSort:'top', photoLimit:30, listFilter:'all', docFilter:'all', openIdea:null, open:null };
 
@@ -134,7 +141,7 @@ function roleEmail(key){
   const want = (ROLES.find(r => r[0] === key) || [])[2] || key;
   const m = M.find(x => (x.name || '').toLowerCase().split(' ')[0] === want.toLowerCase()) || M.find(x => x.email.toLowerCase().startsWith(want.toLowerCase()));
   if(m) return m.email;
-  const adm = M.find(x => x.is_admin);
+  const adm = MEMBERS.find(x => x.is_admin);
   return adm ? adm.email : (me ? me.email : '');
 }
 
@@ -159,13 +166,13 @@ async function loadAll(){
     data.forEach(r => { (out[r.collection] = out[r.collection] || {})[r.id] = r.data; });
     if(data.length < 1000) break; from += 1000;
   }
-  D = out; loaded = true;
+  D = out; loaded = true; mergePeople();
 }
 async function loadMembers(){
   const {data, error} = await sb.from('allowed_emails').select('*').order('name');
   if(error) throw error;
-  M = data || [];
-  if(me) me = M.find(x => x.email === me.email) || me;
+  MEMBERS = data || [];
+  mergePeople();
   return M;
 }
 function subscribe(){
@@ -174,6 +181,7 @@ function subscribe(){
     .on('postgres_changes', {event:'*', schema:'public', table:'docs'}, p => {
       if(p.eventType === 'DELETE'){ const o = p.old || {}; if(o.collection && D[o.collection]) delete D[o.collection][o.id]; else loadAll().then(schedule).catch(() => {}); }
       else { const n = p.new; (D[n.collection] = D[n.collection] || {})[n.id] = n.data; }
+      if((p.new || p.old || {}).collection === 'team' || !(p.new || p.old || {}).collection) mergePeople();
       schedule();
     })
     .on('postgres_changes', {event:'*', schema:'public', table:'allowed_emails'}, () => { loadMembers().then(schedule).catch(() => {}); })
@@ -218,7 +226,7 @@ const stamp = () => ({by: me.email, at: new Date().toISOString()});
 
 // In-app notification, which the engine also sends to the person's phone
 function notify(to, title, body, ref, kind){
-  if(!to || !me || to === me.email) return;
+  if(!to || !me || to === me.email || isProfile(to)) return;
   const id = newId();
   put('inbox', id, {to, title, body, ref: ref || '', kind: kind || 'info', read:false, by: me.email, at: new Date().toISOString()}).catch(() => {});
 }

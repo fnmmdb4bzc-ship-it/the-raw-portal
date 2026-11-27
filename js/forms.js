@@ -3,7 +3,7 @@
 
 /* ---------- one form system for everything ---------- */
 let F = null;
-const peopleOpts = () => M.map(m => [m.email, nameOf(m.email)]);
+const peopleOpts = () => M.map(m => [m.email, nameOf(m.email) + (m.profile ? ' (no access yet)' : '')]);
 const brandOpts = (blank = 'No specific brand') => [['', blank], ...cfg().brands.map(b => [b.name, b.name])];
 const curOpts = () => cfg().currencies.map(c => [c, c]);
 function opt(o, val){ const [v, l] = Array.isArray(o) ? o : [o, o]; return '<option value="' + esc(v) + '"' + (String(v) === String(val == null ? '' : val) ? ' selected' : '') + '>' + esc(l) + '</option>'; }
