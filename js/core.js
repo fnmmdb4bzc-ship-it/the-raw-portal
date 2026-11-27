@@ -181,15 +181,20 @@ function subscribe(){
 }
 
 // The screen changes first, the save happens in the background.
+// Writes still on their way to the database, so linked notes can wait for the record they belong to
+const PENDING = {};
+function track(col, id, p){ const k = col + '/' + id; PENDING[k] = p; p.catch(() => {}).finally(() => { if(PENDING[k] === p) delete PENDING[k]; }); return p; }
+const afterSaved = ref => (PENDING[ref] || Promise.resolve()).catch(() => {});
 function put(col, id, data){
   (D[col] = D[col] || {})[id] = data; schedule();
-  return sb.from('docs').upsert({collection:col, id, data, updated_at:new Date().toISOString()}).then(({error}) => { if(error){ toast('Could not save. ' + error.message); throw error; } });
+  const wait = (col === 'activity' || col === 'comments') && data && data.ref ? afterSaved(data.ref) : Promise.resolve();
+  return track(col, id, wait.then(() => sb.from('docs').upsert({collection:col, id, data, updated_at:new Date().toISOString()})).then(({error}) => { if(error){ toast('Could not save. ' + error.message); throw error; } }));
 }
 // Create only if it does not exist yet (used for things that are generated automatically)
 function putNew(col, id, data){
   if((D[col] || {})[id]) return Promise.resolve(false);
   (D[col] = D[col] || {})[id] = data; schedule();
-  return sb.from('docs').upsert({collection:col, id, data}, {onConflict:'collection,id', ignoreDuplicates:true}).then(({error}) => { if(error) console.warn(error); return true; });
+  return track(col, id, sb.from('docs').upsert({collection:col, id, data}, {onConflict:'collection,id', ignoreDuplicates:true}).then(({error}) => { if(error) console.warn(error); return true; }));
 }
 // Change a few fields without overwriting someone else's changes to other fields
 function patch(col, id, changes){
